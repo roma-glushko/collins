@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+    </head>
+    <body>
+        <h1>WebSocket Chat</h1>
+        <h2>Your ID: <span id="ws-id"></span></h2>
+        <form action="" onsubmit="sendMessage(event)">
+            <input type="text" id="messageText" autocomplete="off"/>
+            <button>Send</button>
+        </form>
+        <ul id='messages'>
+        </ul>
+        <script>
+            const client_id = Date.now()
+            document.querySelector("#ws-id").textContent = client_id.toString(10);
+
+            const ws = new WebSocket(`ws://localhost:3003/ws/${client_id}`);
+
+            ws.onmessage = (event) => {
+                const messages = document.getElementById('messages')
+                const message = document.createElement('li')
+                const content = document.createTextNode(event.data)
+
+                message.appendChild(content)
+                messages.appendChild(message)
+            };
+
+            const sendMessage = (event) => {
+                const input = document.getElementById("messageText")
+
+                ws.send(input.value)
+
+                input.value = ''
+                event.preventDefault()
+            }
+        </script>
+    </body>
+</html>
