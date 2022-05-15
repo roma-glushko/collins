@@ -1,9 +1,14 @@
 module.exports = {
     entry: {
-        main: "./js/LiveArea.jsx",
+        main: "./js/LiveArea.tsx",
     },
+    target: "web",
     module: {
         rules: [
+            {
+                test: /\.(ts|tsx)$/,
+                loader: "awesome-typescript-loader",
+            },
             {
                 test: /\.jsx$/,
                 // exclude: /node_modules/,
@@ -25,7 +30,7 @@ module.exports = {
         ],
     },
     resolve: {
-        extensions: [".js", ".jsx"],
+        extensions: [".js", ".jsx", ".json", ".ts", ".tsx"],
     },
     output: {
         path: __dirname + "/dist",
