@@ -9,15 +9,6 @@
     </head>
     <body>
         <div id="live-area-app"></div>
-        <h1>📻 Live Area</h1>
-        <p>Example of real-time collaboration based on the Operational Transformation algorithm</p>
-        <h3>Your ID: <span id="client-id"></span></h3>
-        <form action="">
-            <textarea rows="15" cols="50" id="messageText" autocomplete="off"></textarea>
-        </form>
-        <h3>Action Log</h3>
-        <ul id="actions">
-        </ul>
         <script>
             const client_id = Date.now()
             document.querySelector("#client-id").textContent = client_id.toString(10);
