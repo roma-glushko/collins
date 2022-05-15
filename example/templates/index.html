@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Chat</title>
+        <title>📻 Live Area</title>
     </head>
     <body>
-        <h1>WebSocket Chat</h1>
-        <h2>Your ID: <span id="ws-id"></span></h2>
-        <form action="" onsubmit="sendMessage(event)">
-            <input type="text" id="messageText" autocomplete="off"/>
-            <button>Send</button>
+        <h1>📻 Live Area</h1>
+        <p>Example of real-time collaboration based on the Operational Transformation algorithm</p>
+        <h3>Your ID: <span id="client-id"></span></h3>
+        <form action="">
+            <textarea rows="15" cols="50" id="messageText" autocomplete="off"></textarea>
         </form>
-        <ul id='messages'>
+        <h3>Action Log</h3>
+        <ul id="actions">
         </ul>
         <script>
             const client_id = Date.now()
-            document.querySelector("#ws-id").textContent = client_id.toString(10);
+            document.querySelector("#client-id").textContent = client_id.toString(10);
+            document.title += ` (#${client_id})`
 
             const ws = new WebSocket(`ws://localhost:3003/ws/${client_id}`);
 
             ws.onmessage = (event) => {
-                const messages = document.getElementById('messages')
+                const messages = document.getElementById("actions")
                 const message = document.createElement('li')
                 const content = document.createTextNode(event.data)
 
