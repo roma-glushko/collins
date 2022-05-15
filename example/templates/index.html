@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>📻 Live Area</title>
+        <title>Live Area</title>
+        <meta charset="utf-8" />
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" type="image/png" href="{{ url_for('frontend', path='favicon.png') }}">
     </head>
     <body>
+        <div id="live-area-app"></div>
         <h1>📻 Live Area</h1>
         <p>Example of real-time collaboration based on the Operational Transformation algorithm</p>
         <h3>Your ID: <span id="client-id"></span></h3>
@@ -38,5 +43,9 @@
                 event.preventDefault()
             }
         </script>
+        <script
+            type="text/javascript"
+            src="{{ url_for('frontend', path='dist/main.bundle.js') }}"
+        ></script>
     </body>
 </html>

@@ -1,12 +1,15 @@
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from livearea.connection_manager import ConnectionManager
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
 
+app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
+
+templates = Jinja2Templates(directory="templates")
 connection_manager = ConnectionManager()
 
 
