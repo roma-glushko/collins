@@ -19,7 +19,7 @@ def test__changeset__encode() -> None:
         original_doc_length=196,
         new_doc_length=197,
         operations="|5=2p=v*4*5+1",
-        char_bank="x"
+        char_bank="x",
     )
 
     assert changeset.encode() == "Z:5g>1|5=2p=v*4*5+1$x"

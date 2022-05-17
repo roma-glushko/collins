@@ -6,8 +6,9 @@ from typing import Final, Optional
 from collins.encode import decode_number
 
 OPERATION_LIST_END: Final[str] = "$"
-OPERATION_REGEX: Final[str] = \
-    r"(?P<attributes>(?:\*[0-9a-z]+)*)(?:\|(?P<line_num>[0-9a-z]+))?(?P<type>[-+=])(?P<char_num>[0-9a-z]+)|(?P<end>.)"
+OPERATION_REGEX: Final[
+    str
+] = r"(?P<attributes>(?:\*[0-9a-z]+)*)(?:\|(?P<line_num>[0-9a-z]+))?(?P<type>[-+=])(?P<char_num>[0-9a-z]+)|(?P<end>.)"
 
 
 class OperationTypes(str, Enum):
@@ -18,15 +19,21 @@ class OperationTypes(str, Enum):
     - "+": Insert `chars` characters (containing `lines` newlines) at the current position in the document.
             The inserted characters come from the changeset's character bank.
     """
+
     KEEP = "="
     REMOVE = "-"
     INSERT = "+"
 
 
 class Operation:
-
-    def __init__(self, type: OperationTypes, char_n: int = 0, line_no: int = 0, attributes: str = '',
-                 char_bank: str = '') -> None:
+    def __init__(
+        self,
+        type: OperationTypes,
+        char_n: int = 0,
+        line_no: int = 0,
+        attributes: str = "",
+        char_bank: str = "",
+    ) -> None:
         self.type = type
 
         """
@@ -77,23 +84,35 @@ class OperationList:
         registry: dict[OperationTypes, list[Operation]] = defaultdict(list)
 
         for operation in self._operations:
-            if operation.type == OperationTypes.KEEP and last_operation != OperationTypes.KEEP:
-                operation_buffer += registry[OperationTypes.REMOVE] + registry[OperationTypes.INSERT]
+            if (
+                operation.type == OperationTypes.KEEP
+                and last_operation
+                and last_operation.type != OperationTypes.KEEP
+            ):
+                operation_buffer += (
+                    registry[OperationTypes.REMOVE] + registry[OperationTypes.INSERT]
+                )
 
                 registry[OperationTypes.REMOVE] = []
                 registry[OperationTypes.INSERT] = []
 
-            if operation.type != OperationTypes.KEEP and last_operation == OperationTypes.KEEP:
+            if (
+                operation.type != OperationTypes.KEEP
+                and last_operation
+                and last_operation.type == OperationTypes.KEEP
+            ):
                 operation_buffer += registry[OperationTypes.KEEP]
                 registry[OperationTypes.KEEP] = []
 
             registry[operation.type].append(operation)
             last_operation = operation
 
-        self._operations = operation_buffer + \
-                           registry[OperationTypes.REMOVE] + \
-                           registry[OperationTypes.INSERT] + \
-                           registry[OperationTypes.KEEP]
+        self._operations = (
+            operation_buffer
+            + registry[OperationTypes.REMOVE]
+            + registry[OperationTypes.INSERT]
+            + registry[OperationTypes.KEEP]
+        )
 
     @classmethod
     def decode(cls, encoded_operators: str, char_bank: str) -> "OperationList":

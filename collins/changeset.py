@@ -1,13 +1,13 @@
+import re
 from typing import Final, Match
 
-import re
-
-from collins.encode import encode_length, decode_number
+from collins.encode import decode_number, encode_length
 from collins.operations import OPERATION_LIST_END, OperationList
 
 CHANGESET_SIGNALTURE: Final[str] = "Z:"
 CHANGESET_HEADER_REGEX: Final[
-    str] = rf"{CHANGESET_SIGNALTURE}(?P<original_length>[0-9a-z]+)(?P<diff_sign>[><])(?P<new_len_diff>[0-9a-z]+)|"
+    str
+] = rf"{CHANGESET_SIGNALTURE}(?P<original_length>[0-9a-z]+)(?P<diff_sign>[><])(?P<new_len_diff>[0-9a-z]+)|"
 
 """
 exports.compose = (cs1, cs2, pool) => {
@@ -44,11 +44,18 @@ exports.compose = (cs1, cs2, pool) => {
 
 
 class ChangeSet:
-    def __init__(self, original_doc_length: int, operations: OperationList, new_doc_length: int = None) -> None:
+    def __init__(
+        self,
+        original_doc_length: int,
+        operations: OperationList,
+        new_doc_length: int = None,
+    ) -> None:
         self.operations = operations
         self.original_doc_length = original_doc_length
 
-        self.new_doc_length = new_doc_length if new_doc_length else self._calculate_new_doc_length()
+        self.new_doc_length = (
+            new_doc_length if new_doc_length else self._calculate_new_doc_length()
+        )
 
     def __call__(self, text: str) -> str:
         pass
@@ -68,18 +75,29 @@ class ChangeSet:
     def encode(self) -> str:
         encoded_original_length: str = encode_length(self.original_doc_length)
         len_diff: int = self.new_doc_length - self.original_doc_length
-        len_diff_encoded: str = f">{encode_length(len_diff)}" if len_diff >= 0 else f"<{encode_length(-len_diff)}"
+        len_diff_encoded: str = (
+            f">{encode_length(len_diff)}"
+            if len_diff >= 0
+            else f"<{encode_length(-len_diff)}"
+        )
 
-        return f"{CHANGESET_SIGNALTURE}{encoded_original_length}{len_diff_encoded}{self.operations}{OPERATION_LIST_END}{self.char_bank}"
+        return (
+            f"{CHANGESET_SIGNALTURE}"
+            f"{encoded_original_length}{len_diff_encoded}{self.operations}{OPERATION_LIST_END}{self.char_bank}"
+        )
 
     @classmethod
     def decode(cls, serialized_changeset: str) -> "ChangeSet":
-        header_part_matches: Match[str] = re.search(CHANGESET_HEADER_REGEX, serialized_changeset)
+        header_part_matches: Match[str] = re.search(
+            CHANGESET_HEADER_REGEX, serialized_changeset
+        )
 
         if not header_part_matches:
             pass
 
-        original_doc_length: int = decode_number(header_part_matches.group("original_length"))
+        original_doc_length: int = decode_number(
+            header_part_matches.group("original_length")
+        )
         len_diff_sign: int = 1 if header_part_matches.group("diff_sign") == ">" else -1
         len_delta: int = decode_number(header_part_matches.group("new_len_diff"))
 
@@ -88,7 +106,9 @@ class ChangeSet:
         header_length: int = len(header_part_matches[0])
         operation_list_end: int = serialized_changeset.find(OPERATION_LIST_END)
 
-        serialized_operations: str = serialized_changeset[header_length:operation_list_end]
+        serialized_operations: str = serialized_changeset[
+            header_length:operation_list_end
+        ]
         char_bank: str = serialized_changeset[operation_list_end + 1:]
 
         return cls(
@@ -99,4 +119,3 @@ class ChangeSet:
 
     def _calculate_new_doc_length(self):
         pass
-
