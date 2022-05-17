@@ -1,72 +1,69 @@
-import string
-from enum import Enum
 from typing import Final, Match
 
 import re
-from pydantic import BaseModel
 
-LENGTH_ENCODE_BASE: Final[int] = 36
+from collins.encode import encode_length, decode_number
+from collins.operations import OPERATION_LIST_END, OperationList
+
 CHANGESET_SIGNALTURE: Final[str] = "Z:"
 CHANGESET_HEADER_REGEX: Final[
     str] = rf"{CHANGESET_SIGNALTURE}(?P<original_length>[0-9a-z]+)(?P<diff_sign>[><])(?P<new_len_diff>[0-9a-z]+)|"
-OPERATION_LIST_END: Final[str] = "$"
+
+"""
+exports.compose = (cs1, cs2, pool) => {
+  const unpacked1 = exports.unpack(cs1);
+  const unpacked2 = exports.unpack(cs2);
+  const len1 = unpacked1.oldLen;
+  const len2 = unpacked1.newLen;
+  assert(len2 === unpacked2.oldLen, 'mismatched composition of two changesets');
+  const len3 = unpacked2.newLen;
+  const bankIter1 = exports.stringIterator(unpacked1.charBank);
+  const bankIter2 = exports.stringIterator(unpacked2.charBank);
+  const bankAssem = exports.stringAssembler();
+
+  const newOps = applyZip(unpacked1.ops, unpacked2.ops, (op1, op2) => {
+    const op1code = op1.opcode;
+    const op2code = op2.opcode;
+    if (op1code === '+' && op2code === '-') {
+      bankIter1.skip(Math.min(op1.chars, op2.chars));
+    }
+    const opOut = slicerZipperFunc(op1, op2, pool);
+    if (opOut.opcode === '+') {
+      if (op2code === '+') {
+        bankAssem.append(bankIter2.take(opOut.chars));
+      } else {
+        bankAssem.append(bankIter1.take(opOut.chars));
+      }
+    }
+    return opOut;
+  });
+
+  return exports.pack(len1, len3, newOps, bankAssem.toString());
+};
+"""
 
 
-def decode_length(serialized_length: str) -> int:
-    return int(serialized_length, LENGTH_ENCODE_BASE)
+class ChangeSet:
+    def __init__(self, original_doc_length: int, operations: OperationList, new_doc_length: int = None) -> None:
+        self.operations = operations
+        self.original_doc_length = original_doc_length
 
+        self.new_doc_length = new_doc_length if new_doc_length else self._calculate_new_doc_length()
 
-def encode_length(length: int, base: int = LENGTH_ENCODE_BASE) -> str:
-    digs = string.digits + string.ascii_lowercase
-    encoded: str = ""
+    def __call__(self, text: str) -> str:
+        pass
 
-    while length:
-        encoded = digs[length % base] + encoded
-        length //= base
+    def compose(self, changeset: "ChangeSet") -> "ChangeSet":
+        pass
+        # return ChangeSet(
+        #     original_doc_length=self.original_doc_length,
+        #     new_doc_length=changeset.new_doc_length,
+        #     operations=composed_operations,
+        #     char_bank=composed_bank,
+        # )
 
-    return encoded
-
-
-class OperationTypes(str, Enum):
-    """
-    Types:
-    - "=": Keep the next `chars` characters (containing `lines` newlines) from the base document
-    - "-": Remove the next `chars` characters (containing `lines` newlines) from the base document
-    - "+": Insert `chars` characters (containing `lines` newlines) at the current position in the document.
-            The inserted characters come from the changeset's character bank.
-    """
-    KEEP = "="
-    REMOVE = "-"
-    INSERT = "+"
-
-
-class Operation(BaseModel):
-    type: OperationTypes
-    char_num: int = 0
-    """
-    The number of characters to keep, insert, or delete.
-    """
-
-    lines: int = 0
-    """
-    The number of characters among the `chars` characters that are newlines.
-    If non-zero, the last character must be a newline.
-    """
-
-    attribs: str = ''
-    """
-    Identifiers of attributes to apply to the text, represented as a repeated (zero or more)
-    sequence of asterisk followed by a non-negative base-36 (lower-case) integer. For example,
-    '*2*1o' indicates that attributes 2 and 60 apply to the text affected by the operation. The
-    identifiers come from the document's attribute pool.
-    """
-
-
-class ChangeSet(BaseModel):
-    original_doc_length: int
-    new_doc_length: int
-    operations: str
-    char_bank: str
+    def transform(self):
+        pass
 
     def encode(self) -> str:
         encoded_original_length: str = encode_length(self.original_doc_length)
@@ -82,18 +79,24 @@ class ChangeSet(BaseModel):
         if not header_part_matches:
             pass
 
-        original_doc_length: int = decode_length(header_part_matches.group("original_length"))
-        len_diff_sigh: int = 1 if header_part_matches.group("diff_sign") == ">" else -1
-        len_diff: int = decode_length(header_part_matches.group("new_len_diff"))
+        original_doc_length: int = decode_number(header_part_matches.group("original_length"))
+        len_diff_sign: int = 1 if header_part_matches.group("diff_sign") == ">" else -1
+        len_delta: int = decode_number(header_part_matches.group("new_len_diff"))
 
-        new_doc_length: int = original_doc_length + len_diff_sigh * len_diff
+        new_doc_length: int = original_doc_length + len_diff_sign * len_delta
 
         header_length: int = len(header_part_matches[0])
         operation_list_end: int = serialized_changeset.find(OPERATION_LIST_END)
 
-        return cls(**{
-            "original_doc_length": original_doc_length,
-            "new_doc_length": new_doc_length,
-            "operations": serialized_changeset[header_length:operation_list_end],
-            "char_bank": serialized_changeset[operation_list_end + 1:],
-        })
+        serialized_operations: str = serialized_changeset[header_length:operation_list_end]
+        char_bank: str = serialized_changeset[operation_list_end + 1:]
+
+        return cls(
+            original_doc_length=original_doc_length,
+            new_doc_length=new_doc_length,
+            operations=OperationList.decode(serialized_operations, char_bank),
+        )
+
+    def _calculate_new_doc_length(self):
+        pass
+
