@@ -7,7 +7,7 @@ PACKAGES?=collins tests
 .venv: pyproject.toml poetry.lock
 	@poetry install
 
-install: ## Install the project
+install: pyproject.toml poetry.lock ## Install the project
 	@poetry install
 
 test-lint: ## Run lints in the check mode (useful for CI)

@@ -28,24 +28,24 @@ class OperationTypes(str, Enum):
 class Operation:
     def __init__(
         self,
-        type: OperationTypes,
+        type: Optional[OperationTypes] = None,
         char_n: int = 0,
         line_no: int = 0,
         attributes: str = "",
         char_bank: str = "",
     ) -> None:
-        self.type = type
+        self.type: Optional[OperationTypes] = type
 
         """
         The number of characters to keep, insert, or delete.
         """
-        self.char_n = char_n
+        self.char_n: int = char_n
 
         """
         The number of characters among the `chars` characters that are newlines.
         If non-zero, the last character must be a newline.
         """
-        self.line_no = line_no
+        self.line_no: int = line_no
 
         """
         Identifiers of attributes to apply to the text, represented as a repeated (zero or more)
@@ -56,6 +56,64 @@ class Operation:
         self.attributes = attributes
 
         self.char_bank = char_bank
+
+    def invert(self) -> None:
+        if self.type == OperationTypes.INSERT:
+            self.type = OperationTypes.REMOVE
+            return
+
+        if self.type == OperationTypes.REMOVE:
+            self.type = OperationTypes.INSERT
+            return
+
+        # this.attribs = this.attribs.invert();
+
+    def append(self, another_operation: "Operation") -> None:
+        """
+        Appends another component to this one
+        """
+        if not another_operation.char_n:
+            # skip no-ops operations
+            return
+
+        if not self.char_n:
+            self.type = another_operation.type
+            # this.attribs = otherCmp.attribs.clone();
+            # TODO: add the validation if char_n > 0
+
+        self.char_n += another_operation.char_n
+        self.line_no += another_operation.line_no
+        self.char_bank += another_operation.char_bank
+
+    def delta_len(self) -> int:
+        if self.type == OperationTypes.INSERT:
+            return self.char_n
+
+        return -self.char_n if self.type == OperationTypes.REMOVE else 0
+
+    def skip(self, only_if_empty: bool = False) -> None:
+        if only_if_empty and self.char_n:
+            return
+
+        self.type = None
+
+    def ltrim(self, char_n: int, line_n: int) -> None:
+        """
+        Removes N chars and L lines from the start of this component
+        """
+        # TODO: validate
+        self.char_n -= char_n
+        self.line_no -= line_n
+        self.char_bank = self.char_bank[char_n:]
+
+    def rtrim(self, char_n: int, line_n: int) -> None:
+        """
+        Keeps N chars and L lines and trim end of this component
+        """
+        # TODO: validate
+        self.char_n = char_n
+        self.line_no = line_n
+        self.char_bank = self.char_bank[:char_n]
 
 
 class OperationList:
@@ -138,10 +196,35 @@ class OperationList:
                 Operation(
                     type=type,
                     char_n=char_n,
-                    line_no=decode_number(operator_match.group("line_num")) or 0,
+                    line_no=decode_number(operator_match.group("line_num"))
+                    if operator_match.group("line_num")
+                    else 0,
                     attributes=operator_match.group("attributes"),
                     char_bank=operation_char_bank,
                 )
             )
 
         return operations
+
+    def encode(self):
+        """
+        Packs components list into compact form that can be sent over the network
+         or stored in the database. Performs smart packing, specifically:
+         - reorders components to keep removals before insertions
+         - merges mergeable components into one
+         - drops final "pure" keeps (that don't do formatting)
+        """
+        self.reorder()
+
+        last_operation: Optional[Operation] = None
+        inner_operation: Optional[Operation] = None
+
+        for operation in self._operations:
+            pass
+
+        # {self.operations}
+        # {OPERATION_LIST_END}
+        # {self.char_bank}
+
+    def delta_len(self) -> int:
+        return sum([operation.delta_len() for operation in self._operations])
