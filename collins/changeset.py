@@ -1,7 +1,7 @@
 import re
 from typing import Final, Match
 
-from collins.encode import decode_number, encode_length
+from collins.encode import decode_number, encode_number
 from collins.operations import OPERATION_LIST_END, OperationList
 
 CHANGESET_SIGNALTURE: Final[str] = "C:"
@@ -27,6 +27,9 @@ class ChangeSet:
         )
 
     def __call__(self, text: str) -> str:
+        """
+        Apply changeset to the document, modifying it in-place.
+        """
         pass
 
     def compose(self, changeset: "ChangeSet") -> "ChangeSet":
@@ -45,18 +48,16 @@ class ChangeSet:
         pass
 
     def encode(self) -> str:
-        encoded_original_length: str = encode_length(self.original_doc_length)
-        len_diff: int = self.new_doc_length - self.original_doc_length
-
-        len_diff_encoded: str = (
-            f"{'>' if len_diff >= 0 else '<'}" f"{encode_length(abs(len_diff))}"
-        )
-
         enc_operations = self.operations.encode()
+
+        encoded_original_length: str = encode_number(self.original_doc_length)
+        encoded_len_diff: str = (
+            f"{'>' if enc_operations.delta_len >= 0 else '<'}" f"{encode_number(abs(enc_operations.delta_len))}"
+        )
 
         return (
             f"{CHANGESET_SIGNALTURE}"
-            f"{encoded_original_length}{len_diff_encoded}{enc_operations}"
+            f"{encoded_original_length}{encoded_len_diff}{str(enc_operations)}"
         )
 
     @classmethod

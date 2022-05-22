@@ -3,7 +3,9 @@ from collections import defaultdict
 from enum import Enum
 from typing import Final, Optional
 
-from collins.encode import decode_number
+from pydantic import BaseModel
+
+from collins.encode import decode_number, encode_number
 
 OPERATION_LIST_END: Final[str] = "$"
 OPERATION_REGEX: Final[
@@ -25,16 +27,31 @@ class OperationTypes(str, Enum):
     INSERT = "+"
 
 
+class EncodedOperation(BaseModel):
+    encoded: str = ""
+    char_bank: str = ""
+    delta_len: int = 0
+
+    def __add__(self, other: "EncodedOperation") -> "EncodedOperation":
+        return EncodedOperation(
+            encoded=self.encoded + other.encoded,
+            char_bank=self.char_bank + other.char_bank,
+            delta_len=self.delta_len + other.delta_len,
+        )
+
+    def __str__(self) -> str:
+        return f"{self.encoded}{OPERATION_LIST_END}{self.char_bank}"
+
+
 class Operation:
     def __init__(
         self,
-        type: Optional[OperationTypes] = None,
+        type: OperationTypes,
         char_n: int = 0,
         line_no: int = 0,
-        attributes: str = "",
         char_bank: str = "",
     ) -> None:
-        self.type: Optional[OperationTypes] = type
+        self.type: OperationTypes = type
 
         """
         The number of characters to keep, insert, or delete.
@@ -46,14 +63,6 @@ class Operation:
         If non-zero, the last character must be a newline.
         """
         self.line_no: int = line_no
-
-        """
-        Identifiers of attributes to apply to the text, represented as a repeated (zero or more)
-        sequence of asterisk followed by a non-negative base-36 (lower-case) integer. For example,
-        '*2*1o' indicates that attributes 2 and 60 apply to the text affected by the operation. The
-        identifiers come from the document's attribute pool.
-        """
-        self.attributes = attributes
 
         self.char_bank = char_bank
 
@@ -72,7 +81,7 @@ class Operation:
         """
         Appends another component to this one
         """
-        if not another_operation.char_n:
+        if not another_operation or not another_operation.char_n:
             # skip no-ops operations
             return
 
@@ -115,6 +124,40 @@ class Operation:
         self.line_no = line_n
         self.char_bank = self.char_bank[:char_n]
 
+    def encode(self) -> EncodedOperation:
+        return EncodedOperation(
+            encoded=f"{'|' + encode_number(self.line_no) if self.line_no else ''}"
+            f"{self.type}"
+            f"{encode_number(self.char_n)}",
+            char_bank=self.char_bank,
+            delta_len=self.delta_len(),
+        )
+
+
+class OperationIterator:
+    def __init__(self, operations: list[Operation]) -> None:
+        self._operations = operations
+        self._i: int = 0
+        self._backlist = []
+
+    def __iter__(self) -> "OperationIterator":
+        self._i: int = 0
+        self._backlist: list[Operation] = []
+
+        return self
+
+    def __next__(self) -> Operation:
+        if self._i >= (len(self._operations) + len(self._backlist)):
+            raise StopIteration
+
+        item: Operation = (len(self._backlist) and self._backlist.pop()) or self._operations[self._i]
+        self._i += 1
+
+        return item
+
+    def append_back(self, operation: Operation) -> None:
+        self._backlist.append(operation)
+
 
 class OperationList:
     def __init__(self, operations: Optional[list[Operation]] = None) -> None:
@@ -126,9 +169,14 @@ class OperationList:
 
         self._operations.append(operation)
 
-    @property
-    def operations(self) -> list[Operation]:
-        return self._operations
+    def __iter__(self) -> OperationIterator:
+        return OperationIterator(operations=self._operations)
+
+    def __len__(self) -> int:
+        return len(self._operations)
+
+    def __getitem__(self, i: int) -> Operation:
+        return self._operations[i]
 
     def reorder(self) -> None:
         """
@@ -174,12 +222,12 @@ class OperationList:
 
     @classmethod
     def decode(cls, encoded_operators: str, char_bank: str) -> "OperationList":
-        operations: "OperationList" = cls()
+        operations: list[Operation] = []
 
         for operator_match in re.finditer(OPERATION_REGEX, encoded_operators):
             if operator_match.group("end") == OPERATION_LIST_END:
                 # Start of the insert operation character bank, so no more operations to parse
-                return operations
+                return cls(operations)
 
             if operator_match.group("end"):
                 pass
@@ -199,14 +247,13 @@ class OperationList:
                     line_no=decode_number(operator_match.group("line_num"))
                     if operator_match.group("line_num")
                     else 0,
-                    attributes=operator_match.group("attributes"),
                     char_bank=operation_char_bank,
                 )
             )
 
-        return operations
+        return cls(operations)
 
-    def encode(self):
+    def encode(self) -> EncodedOperation:
         """
         Packs components list into compact form that can be sent over the network
          or stored in the database. Performs smart packing, specifically:
@@ -216,15 +263,75 @@ class OperationList:
         """
         self.reorder()
 
+        encoded_operations: EncodedOperation = EncodedOperation()
+
         last_operation: Optional[Operation] = None
         inner_operation: Optional[Operation] = None
 
         for operation in self._operations:
-            pass
+            if last_operation and operation.type == last_operation.type:
+                if operation.line_no > 0:
+                    # last and inner are all mergable into multi-line op
+                    last_operation.append(inner_operation)
+                    last_operation.append(operation)
+                    continue
 
-        # {self.operations}
-        # {OPERATION_LIST_END}
-        # {self.char_bank}
+                if last_operation.line_no == 0:
+                    # last and op are both in-line
+                    last_operation.append(operation)
+                    continue
+
+                if not inner_operation:
+                    inner_operation = operation
+                else:
+                    inner_operation.append(operation)
+
+                continue
+
+            if not last_operation:
+                last_operation = operation
+                continue
+
+            encoded_operations += last_operation.encode()
+
+            if inner_operation:
+                encoded_operations += inner_operation.encode()
+                inner_operation = None
+
+            last_operation = operation
+
+        # flush the last
+
+        if not last_operation.type:
+            return encoded_operations
+
+        if last_operation.type == OperationTypes.KEEP:
+            # drop the final keep. TODO: WHY?
+            return encoded_operations
+
+        encoded_operations += last_operation.encode()
+
+        if inner_operation and inner_operation.type:
+            encoded_operations += inner_operation.encode()
+
+        return encoded_operations
+
+    def append_keep(self, char_n: int, line_n: int) -> None:
+        self._operations.append(Operation(OperationTypes.KEEP, char_n, line_n))
+
+    def append_insert(self, char_n: int, line_n: int, char_bank: str) -> None:
+        self._operations.append(
+            Operation(OperationTypes.INSERT, char_n, line_n, char_bank)
+        )
+
+    def append_remove(self, char_n: int, line_n: int, char_bank: str) -> None:
+        self._operations.append(
+            Operation(OperationTypes.REMOVE, char_n, line_n, char_bank)
+        )
+
+    def invert(self) -> None:
+        for operation in self._operations:
+            operation.invert()
 
     def delta_len(self) -> int:
         return sum([operation.delta_len() for operation in self._operations])
