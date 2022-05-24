@@ -5,6 +5,7 @@ from collins.encode import decode_number, encode_number
 from collins.mutators.text import TextMutator
 from collins.operations import (
     OPERATION_LIST_END,
+    EncodedOperations,
     Operation,
     OperationList,
     OperationTypes,
@@ -90,7 +91,7 @@ class ChangeSet:
             if operation.type == OperationTypes.INSERT:
                 text_mutator.insert(operation)
 
-            if operation.type == OperationTypes.REMOVE:
+            if operation.type == OperationTypes.DELETE:
                 """
                 Since we can have multiline remove ops, remove() can
                 return an array of components instead of single one.
@@ -163,7 +164,7 @@ class ChangeSet:
 
         def split(first_op: Operation, second_op: Operation) -> bool:
             no_split: bool = (
-                first_op.type == OperationTypes.REMOVE
+                first_op.type == OperationTypes.DELETE
                 or second_op.type == OperationTypes.INSERT
             )
 
@@ -175,8 +176,8 @@ class ChangeSet:
 
             # REMOVEs can affect KEEPs and INSERTs but not other REMOVEs
             has_remove_actual: bool = (first_op.type != second_op.type) and (
-                first_op.type == OperationTypes.REMOVE
-                or second_op.type == OperationTypes.REMOVE
+                first_op.type == OperationTypes.DELETE
+                or second_op.type == OperationTypes.DELETE
             )
 
             return (has_keep or has_remove_actual) and not no_split
@@ -186,7 +187,7 @@ class ChangeSet:
         return ChangeSet(
             original_doc_length=self.original_doc_length,
             new_doc_length=changeset.new_doc_length,
-            operations=composed_operations,
+            operations=OperationList(composed_operations),
         )
 
     def invert(self) -> "ChangeSet":
@@ -248,13 +249,16 @@ class ChangeSet:
         header_length: int = len(header_part_matches[0])
         operation_list_end: int = serialized_changeset.find(OPERATION_LIST_END)
 
-        serialized_operations: str = serialized_changeset[
-            header_length:operation_list_end
-        ]
+        encoded_operations: str = serialized_changeset[header_length:operation_list_end]
         char_bank: str = serialized_changeset[operation_list_end + 1 :]
 
         return cls(
             original_doc_length=original_doc_length,
             new_doc_length=new_doc_length,
-            operations=OperationList.decode(serialized_operations, char_bank),
+            operations=OperationList.decode(
+                EncodedOperations(
+                    encoded=encoded_operations,
+                    char_bank=char_bank,
+                )
+            ),
         )

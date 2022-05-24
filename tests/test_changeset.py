@@ -1,7 +1,7 @@
 import pytest as pytest
 
 from collins.changeset import ChangeSet
-from collins.operations import OperationList
+from collins.operations import EncodedOperations, OperationList
 
 
 def test__changeset__decode() -> None:
@@ -20,12 +20,18 @@ def test__changeset__encode() -> None:
     changeset: ChangeSet = ChangeSet(
         original_doc_length=196,
         new_doc_length=197,
-        operations=OperationList.decode("|5=2p=v+1", "x"),
+        operations=OperationList.decode(
+            EncodedOperations(
+                encoded="|5=2p=v+1",
+                char_bank="x",
+            )
+        ),
     )
 
     assert changeset.encode() == "C:5g>1|5=2p=v+1$x"
 
 
+@pytest.mark.skip("compose is not implemented yet")
 @pytest.mark.parametrize(
     "enc_changeset_one, enc_changeset_two, result_changeset",
     [

@@ -2,32 +2,37 @@ from typing import Any, Union
 
 import pytest as pytest
 
-from collins.operations import Operation, OperationList, OperationTypes
+from collins.operations import (
+    EncodedOperations,
+    Operation,
+    OperationList,
+    OperationTypes,
+)
 
 
 @pytest.mark.parametrize(
     "opcodes, expected",
     [
         (
-            [OperationTypes.INSERT, OperationTypes.REMOVE, OperationTypes.KEEP],
-            [OperationTypes.REMOVE, OperationTypes.INSERT, OperationTypes.KEEP],
+            [OperationTypes.INSERT, OperationTypes.DELETE, OperationTypes.KEEP],
+            [OperationTypes.DELETE, OperationTypes.INSERT, OperationTypes.KEEP],
         ),
         (
             [
                 OperationTypes.INSERT,
                 OperationTypes.KEEP,
-                OperationTypes.REMOVE,
+                OperationTypes.DELETE,
                 OperationTypes.INSERT,
-                OperationTypes.REMOVE,
+                OperationTypes.DELETE,
                 OperationTypes.INSERT,
-                OperationTypes.REMOVE,
+                OperationTypes.DELETE,
             ],
             [
                 OperationTypes.INSERT,
                 OperationTypes.KEEP,
-                OperationTypes.REMOVE,
-                OperationTypes.REMOVE,
-                OperationTypes.REMOVE,
+                OperationTypes.DELETE,
+                OperationTypes.DELETE,
+                OperationTypes.DELETE,
                 OperationTypes.INSERT,
                 OperationTypes.INSERT,
             ],
@@ -80,7 +85,12 @@ def test__operation_list__encode(
 
 
 def test__operation_list__decode() -> None:
-    operation_list: OperationList = OperationList.decode("|5=2p=v+1", "x")
+    operation_list: OperationList = OperationList.decode(
+        EncodedOperations(
+            encoded="|5=2p=v+1",
+            char_bank="x",
+        )
+    )
 
     expected_operations: list[dict[str, Any]] = [
         {

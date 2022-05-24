@@ -1,7 +1,7 @@
 from typing import Optional
 
 from collins.mutators.line import LineMutator
-from collins.operations import Operation
+from collins.operations import EncodedOperations, Operation, OperationList
 
 
 class TextMutator:
@@ -10,8 +10,8 @@ class TextMutator:
     It supports multiline ops and can efficiently patch multiline structure in place.
     """
 
-    def __init__(self, lines: list[str]) -> None:
-        self.lines: list[str] = lines
+    def __init__(self, lines: list[EncodedOperations]) -> None:
+        self.lines: list[EncodedOperations] = lines  # TODO: come up with a better name
         self._line_idx: int = 0
         self._current_line: Optional[LineMutator] = None
 
@@ -36,7 +36,7 @@ class TextMutator:
                 text_len += len(self.current_line)
                 continue
 
-            text_len += len(line)
+            text_len += len(line.char_bank)
 
         return text_len
 
@@ -45,7 +45,9 @@ class TextMutator:
         if self._current_line:
             return self._current_line
 
-        self._current_line = LineMutator(self.lines[self._line_idx] or "")
+        self._current_line = LineMutator(
+            self.lines[self._line_idx] or EncodedOperations()
+        )
 
         return self._current_line
 
@@ -80,7 +82,7 @@ class TextMutator:
 
         return self
 
-    def take(self, char_n: int, line_no: int) -> None:
+    def take(self, char_n: int, line_no: int) -> OperationList:
         if not line_no:
             return self.current_line.take(char_n)
 
@@ -114,7 +116,7 @@ class TextMutator:
         self.lines[self._line_idx] = self.current_line.finish()
         self._current_line = None
 
-    def finish(self) -> list[str]:
+    def finish(self) -> list[EncodedOperations]:
         # make sure mutated line is finished
         self._close_current_line()
 

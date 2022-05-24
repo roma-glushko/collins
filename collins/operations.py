@@ -23,7 +23,7 @@ class OperationTypes(str, Enum):
     """
 
     KEEP = "="
-    REMOVE = "-"
+    DELETE = "-"
     INSERT = "+"
 
 
@@ -73,13 +73,12 @@ class Operation:
         inverted_type: OperationTypes = OperationTypes.KEEP
 
         if self.type == OperationTypes.INSERT:
-            self.type = OperationTypes.REMOVE
+            self.type = OperationTypes.DELETE
 
-        if self.type == OperationTypes.REMOVE:
+        if self.type == OperationTypes.DELETE:
             self.type = OperationTypes.INSERT
 
         self.type = inverted_type
-        # this.attribs = this.attribs.invert();
 
         return self
 
@@ -104,7 +103,7 @@ class Operation:
         if self.type == OperationTypes.INSERT:
             return self.char_n
 
-        return -self.char_n if self.type == OperationTypes.REMOVE else 0
+        return -self.char_n if self.type == OperationTypes.DELETE else 0
 
     def ltrim(self, char_n: int, line_n: int) -> "Operation":
         """
@@ -140,11 +139,36 @@ class Operation:
     def __repr__(self) -> str:
         reps: dict[OperationTypes, str] = {
             OperationTypes.KEEP: "Keep",
-            OperationTypes.REMOVE: "Remove",
+            OperationTypes.DELETE: "Remove",
             OperationTypes.INSERT: "Insert",
         }
 
         return f'{reps[self.type]}Operation({self.char_n}:{self.line_no}, "{self.char_bank}")'
+
+    @classmethod
+    def keep(cls, char_n: int, line_no: int = 0) -> "Operation":
+        return cls(
+            type=OperationTypes.KEEP,
+            char_n=char_n,
+            line_no=line_no,
+        )
+
+    @classmethod
+    def insert(cls, char_n: int, line_no: int = 0, char_bank: str = "") -> "Operation":
+        return cls(
+            type=OperationTypes.INSERT,
+            char_n=char_n,
+            line_no=line_no,
+            char_bank=char_bank,
+        )
+
+    @classmethod
+    def delete(cls, char_n: int, line_no: int = 0) -> "Operation":
+        return cls(
+            type=OperationTypes.DELETE,
+            char_n=char_n,
+            line_no=line_no,
+        )
 
 
 class OperationIterator:
@@ -214,10 +238,10 @@ class OperationList:
                 and last_operation.type != OperationTypes.KEEP
             ):
                 operation_buffer += (
-                    registry[OperationTypes.REMOVE] + registry[OperationTypes.INSERT]
+                    registry[OperationTypes.DELETE] + registry[OperationTypes.INSERT]
                 )
 
-                registry[OperationTypes.REMOVE] = []
+                registry[OperationTypes.DELETE] = []
                 registry[OperationTypes.INSERT] = []
 
             if (
@@ -233,7 +257,7 @@ class OperationList:
 
         self._operations = (
             operation_buffer
-            + registry[OperationTypes.REMOVE]
+            + registry[OperationTypes.DELETE]
             + registry[OperationTypes.INSERT]
             + registry[OperationTypes.KEEP]
         )
@@ -354,7 +378,7 @@ class OperationList:
 
     def append_remove(self, char_n: int, line_n: int, char_bank: str) -> None:
         self._operations.append(
-            Operation(OperationTypes.REMOVE, char_n, line_n, char_bank)
+            Operation(OperationTypes.DELETE, char_n, line_n, char_bank)
         )
 
     def invert(self) -> "OperationList":
