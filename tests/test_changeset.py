@@ -1,5 +1,3 @@
-from typing import Any
-
 import pytest as pytest
 
 from collins.changeset import ChangeSet

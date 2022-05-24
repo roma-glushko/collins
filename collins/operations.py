@@ -27,13 +27,13 @@ class OperationTypes(str, Enum):
     INSERT = "+"
 
 
-class EncodedOperation(BaseModel):
+class EncodedOperations(BaseModel):
     encoded: str = ""
     char_bank: str = ""
     delta_len: int = 0
 
-    def __add__(self, other: "EncodedOperation") -> "EncodedOperation":
-        return EncodedOperation(
+    def __add__(self, other: "EncodedOperations") -> "EncodedOperations":
+        return EncodedOperations(
             encoded=self.encoded + other.encoded,
             char_bank=self.char_bank + other.char_bank,
             delta_len=self.delta_len + other.delta_len,
@@ -41,6 +41,9 @@ class EncodedOperation(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.encoded}{OPERATION_LIST_END}{self.char_bank}"
+
+    def __repr__(self) -> str:
+        return f'EncodedOperations("{self.encoded}", "{self.char_bank}")'
 
 
 class Operation:
@@ -66,16 +69,19 @@ class Operation:
 
         self.char_bank = char_bank
 
-    def invert(self) -> None:
+    def invert(self) -> "Operation":
+        inverted_type: OperationTypes = OperationTypes.KEEP
+
         if self.type == OperationTypes.INSERT:
             self.type = OperationTypes.REMOVE
-            return
 
         if self.type == OperationTypes.REMOVE:
             self.type = OperationTypes.INSERT
-            return
 
+        self.type = inverted_type
         # this.attribs = this.attribs.invert();
+
+        return self
 
     def append(self, another_operation: "Operation") -> None:
         """
@@ -100,13 +106,7 @@ class Operation:
 
         return -self.char_n if self.type == OperationTypes.REMOVE else 0
 
-    def skip(self, only_if_empty: bool = False) -> None:
-        if only_if_empty and self.char_n:
-            return
-
-        self.type = None
-
-    def ltrim(self, char_n: int, line_n: int) -> None:
+    def ltrim(self, char_n: int, line_n: int) -> "Operation":
         """
         Removes N chars and L lines from the start of this component
         """
@@ -115,23 +115,36 @@ class Operation:
         self.line_no -= line_n
         self.char_bank = self.char_bank[char_n:]
 
-    def rtrim(self, char_n: int, line_n: int) -> None:
+        return self
+
+    def rtrim(self, char_n: int, line_n: int) -> "Operation":
         """
-        Keeps N chars and L lines and trim end of this component
+        Keeps N chars and L lines and trim end of this char_bank
         """
         # TODO: validate
         self.char_n = char_n
         self.line_no = line_n
         self.char_bank = self.char_bank[:char_n]
 
-    def encode(self) -> EncodedOperation:
-        return EncodedOperation(
+        return self
+
+    def encode(self) -> EncodedOperations:
+        return EncodedOperations(
             encoded=f"{'|' + encode_number(self.line_no) if self.line_no else ''}"
             f"{self.type}"
             f"{encode_number(self.char_n)}",
             char_bank=self.char_bank,
             delta_len=self.delta_len(),
         )
+
+    def __repr__(self) -> str:
+        reps: dict[OperationTypes, str] = {
+            OperationTypes.KEEP: "Keep",
+            OperationTypes.REMOVE: "Remove",
+            OperationTypes.INSERT: "Insert",
+        }
+
+        return f'{reps[self.type]}Operation({self.char_n}:{self.line_no}, "{self.char_bank}")'
 
 
 class OperationIterator:
@@ -150,7 +163,9 @@ class OperationIterator:
         if self._i >= (len(self._operations) + len(self._backlist)):
             raise StopIteration
 
-        item: Operation = (len(self._backlist) and self._backlist.pop()) or self._operations[self._i]
+        item: Operation = (
+            len(self._backlist) and self._backlist.pop()
+        ) or self._operations[self._i]
         self._i += 1
 
         return item
@@ -168,6 +183,9 @@ class OperationList:
             return
 
         self._operations.append(operation)
+
+    def extend(self, operations: list[Operation]) -> None:
+        self._operations.extend(operations)
 
     def __iter__(self) -> OperationIterator:
         return OperationIterator(operations=self._operations)
@@ -221,10 +239,11 @@ class OperationList:
         )
 
     @classmethod
-    def decode(cls, encoded_operators: str, char_bank: str) -> "OperationList":
+    def decode(cls, encoded_operators: EncodedOperations) -> "OperationList":
         operations: list[Operation] = []
+        char_bank: str = encoded_operators.char_bank
 
-        for operator_match in re.finditer(OPERATION_REGEX, encoded_operators):
+        for operator_match in re.finditer(OPERATION_REGEX, encoded_operators.encoded):
             if operator_match.group("end") == OPERATION_LIST_END:
                 # Start of the insert operation character bank, so no more operations to parse
                 return cls(operations)
@@ -253,7 +272,16 @@ class OperationList:
 
         return cls(operations)
 
-    def encode(self) -> EncodedOperation:
+    @classmethod
+    def decode_str(cls, encoded_operations: str, char_bank: str) -> "OperationList":
+        return cls.decode(
+            EncodedOperations(
+                encoded=encoded_operations,
+                char_bank=char_bank,
+            )
+        )
+
+    def encode(self) -> EncodedOperations:
         """
         Packs components list into compact form that can be sent over the network
          or stored in the database. Performs smart packing, specifically:
@@ -263,7 +291,7 @@ class OperationList:
         """
         self.reorder()
 
-        encoded_operations: EncodedOperation = EncodedOperation()
+        encoded_operations: EncodedOperations = EncodedOperations()
 
         last_operation: Optional[Operation] = None
         inner_operation: Optional[Operation] = None
@@ -302,7 +330,7 @@ class OperationList:
 
         # flush the last
 
-        if not last_operation.type:
+        if not last_operation or not last_operation.type:
             return encoded_operations
 
         if last_operation.type == OperationTypes.KEEP:
@@ -329,9 +357,11 @@ class OperationList:
             Operation(OperationTypes.REMOVE, char_n, line_n, char_bank)
         )
 
-    def invert(self) -> None:
-        for operation in self._operations:
-            operation.invert()
+    def invert(self) -> "OperationList":
+        return OperationList([operation.invert() for operation in self._operations])
 
     def delta_len(self) -> int:
         return sum([operation.delta_len() for operation in self._operations])
+
+    def __repr__(self) -> str:
+        return f"OperationList(operations: {len(self._operations)})"

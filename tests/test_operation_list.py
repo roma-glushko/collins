@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Any, Union
 
 import pytest as pytest
 
@@ -9,40 +9,42 @@ from collins.operations import Operation, OperationList, OperationTypes
     "opcodes, expected",
     [
         (
-                [OperationTypes.INSERT, OperationTypes.REMOVE, OperationTypes.KEEP],
-                [OperationTypes.REMOVE, OperationTypes.INSERT, OperationTypes.KEEP],
+            [OperationTypes.INSERT, OperationTypes.REMOVE, OperationTypes.KEEP],
+            [OperationTypes.REMOVE, OperationTypes.INSERT, OperationTypes.KEEP],
         ),
         (
-                [
-                    OperationTypes.INSERT,
-                    OperationTypes.KEEP,
-                    OperationTypes.REMOVE,
-                    OperationTypes.INSERT,
-                    OperationTypes.REMOVE,
-                    OperationTypes.INSERT,
-                    OperationTypes.REMOVE,
-                ],
-                [
-                    OperationTypes.INSERT,
-                    OperationTypes.KEEP,
-                    OperationTypes.REMOVE,
-                    OperationTypes.REMOVE,
-                    OperationTypes.REMOVE,
-                    OperationTypes.INSERT,
-                    OperationTypes.INSERT,
-                ],
+            [
+                OperationTypes.INSERT,
+                OperationTypes.KEEP,
+                OperationTypes.REMOVE,
+                OperationTypes.INSERT,
+                OperationTypes.REMOVE,
+                OperationTypes.INSERT,
+                OperationTypes.REMOVE,
+            ],
+            [
+                OperationTypes.INSERT,
+                OperationTypes.KEEP,
+                OperationTypes.REMOVE,
+                OperationTypes.REMOVE,
+                OperationTypes.REMOVE,
+                OperationTypes.INSERT,
+                OperationTypes.INSERT,
+            ],
         ),
     ],
 )
 def test__operation_list__reorder(
-        opcodes: list[OperationTypes], expected: list[OperationTypes]
+    opcodes: list[OperationTypes], expected: list[OperationTypes]
 ) -> None:
     operations: list[Operation] = [Operation(type, 1, 0, "x") for type in opcodes]
 
     operation_list: OperationList = OperationList(operations)
     operation_list.reorder()
 
-    actual_optypes: list[OperationTypes] = [operation.type for operation in operation_list]
+    actual_optypes: list[OperationTypes] = [
+        operation.type for operation in operation_list
+    ]
 
     assert actual_optypes == expected
 
@@ -53,13 +55,13 @@ def test__operation_list__reorder(
         ([["+", 1, 0, "a"], ["+", 2, 0, "bc"]], "+3$abc"),
         ([["-", 1, 0, "a"], ["+", 2, 0, "bc"]], "-1+2$abc"),
         (
-                [
-                    ["+", 1, 0, "a"],
-                    ["+", 2, 1, "b\n"],
-                    ["+", 2, 1, "c\n"],
-                    ["+", 2, 0, "de"],
-                ],
-                "|2+5+2$ab\nc\nde",
+            [
+                ["+", 1, 0, "a"],
+                ["+", 2, 1, "b\n"],
+                ["+", 2, 1, "c\n"],
+                ["+", 2, 0, "de"],
+            ],
+            "|2+5+2$ab\nc\nde",
         ),
         ([["+", 1, 0, "a"], ["=", 2, 0, ""]], "+1$a"),
         ([["+", 2, 0, "ab"], ["-", 2, 0, "cd"]], "-2+2$cdab"),
@@ -68,7 +70,7 @@ def test__operation_list__reorder(
     ],
 )
 def test__operation_list__encode(
-        raw_operations: list[list[Union[str, int]]], encoded_result: str
+    raw_operations: list[list[Union[str, int]]], encoded_result: str
 ) -> None:
     operation_list: OperationList = OperationList(
         operations=[Operation(*raw_operation) for raw_operation in raw_operations]
@@ -99,7 +101,7 @@ def test__operation_list__decode() -> None:
     ]
 
     for actual_operation, expected_operation in zip(
-            operation_list, expected_operations
+        operation_list, expected_operations
     ):
         assert actual_operation.type == expected_operation["type"]
         assert actual_operation.char_n == expected_operation["char_n"]
