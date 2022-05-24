@@ -1,16 +1,17 @@
 import re
-from typing import Final, Match
+from typing import TYPE_CHECKING, Final, Match
 
-from mutators.text import TextMutator
-
-from collins.document import Document
 from collins.encode import decode_number, encode_number
+from collins.mutators.text import TextMutator
 from collins.operations import (
     OPERATION_LIST_END,
     Operation,
     OperationList,
     OperationTypes,
 )
+
+if TYPE_CHECKING:
+    from collins.document import Document
 
 SIGNATURE: Final[str] = "C:"
 HEADER_REGEX: Final[
@@ -73,7 +74,7 @@ class ChangeSet:
     };
     """
 
-    def __call__(self, document: Document) -> Document:
+    def __call__(self, document: "Document") -> "Document":
         """
         Apply changeset to the document, modifying it in-place.
         """

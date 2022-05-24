@@ -1,7 +1,7 @@
 from typing import Optional
 
-from mutators.line import LineMutator
-from operations import Operation
+from collins.mutators.line import LineMutator
+from collins.operations import Operation
 
 
 class TextMutator:

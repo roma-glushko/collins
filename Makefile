@@ -21,3 +21,6 @@ lint: ## Lint the source code
 	@poetry run black $(PACKAGES)
 	@poetry run flake8 $(PACKAGES)
 	@poetry run mypy --pretty $(PACKAGES)
+
+test: ## Run all tests
+	@poetry run pytest tests

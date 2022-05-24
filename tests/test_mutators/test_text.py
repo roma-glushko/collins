@@ -1,14 +1,7 @@
-"""
- it('can insert multiline ops mid-line', function() {
-    var m = new ALinesMutator(clone(sample), pool);
-    var res = m.skip(2).insert(new OpComponent('+', 4, 2, null, 'X\nY\n')).finish();
+import pytest
 
-    assert.deepEqual(res, [{a:'*0+1|1+3', s:'abX\n'}, {a:'|1+2', s:'Y\n'}, {a:'|1+2', s:'c\n'}, {a:'*1+4|1+1', s:'defg\n'}]);
-  });
-"""
-import pytest as pytest
-from mutators.text import TextMutator
-from operations import Operation, OperationTypes
+from collins.mutators.text import TextMutator
+from collins.operations import Operation, OperationTypes
 
 
 def test__text_mutator__length_calculations() -> None:
@@ -39,7 +32,7 @@ def test__text_mutator__insert_multiline_ops(
     assert actual_result == expected_result
 
 
-def test__test_mutator__remove_from_middle_to_the_end_and_insert():
+def test__test_mutator__remove_from_middle_to_the_end_and_insert() -> None:
     mutator = TextMutator(["a\n", "b\n"])
 
     actual_result: list[str] = (

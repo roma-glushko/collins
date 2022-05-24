@@ -1,7 +1,10 @@
-from buider import ChangeSetBuilder
-from changeset import ChangeSet
+from typing import TYPE_CHECKING
 
+from collins.buider import ChangeSetBuilder
 from collins.mutators.text import TextMutator
+
+if TYPE_CHECKING:
+    from collins.changeset import ChangeSet
 
 
 class Document:
@@ -16,7 +19,7 @@ class Document:
         builder: ChangeSetBuilder = ChangeSetBuilder()
         builder.insert(text)
 
-        changeset: ChangeSet = builder.finish()
+        changeset: "ChangeSet" = builder.finish()
 
         return changeset(Document())
 

@@ -5,6 +5,10 @@ description = "Toolkit to implement Operational Tranformation algorithm that hel
 authors = ["Roman Glushko <roman.glushko.m@gmail.com>"]
 license = "MIT"
 
+packages = [
+    { include = "collins" },
+]
+
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 pydantic = "^1.9.0"

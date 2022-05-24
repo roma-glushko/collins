@@ -1,6 +1,7 @@
 import pytest
-from mutators.line import LineMutator
-from operations import EncodedOperations
+
+from collins.mutators.line import LineMutator
+from collins.operations import EncodedOperations
 
 
 @pytest.fixture

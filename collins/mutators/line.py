@@ -1,7 +1,12 @@
 from copy import deepcopy
 from typing import Optional
 
-from operations import EncodedOperations, Operation, OperationIterator, OperationList
+from collins.operations import (
+    EncodedOperations,
+    Operation,
+    OperationIterator,
+    OperationList,
+)
 
 # TODO: terrible code below. Needs some refactoring
 
