@@ -1,7 +1,7 @@
 import pytest
 
 from collins.mutators.line import LineMutator
-from collins.operations import EncodedOperations
+from collins.operations import EncodedOperations, Operation, OperationList
 
 
 @pytest.fixture
@@ -16,18 +16,15 @@ def test__line_mutator__empty_string(empty_operations) -> None:
     assert not mutator.mutated
 
 
-"""
-it('supports newline at the end', function() {
-    var m = new AStringMutator({ a: '*0+4|1+1', s: 'abcd\n' }, pool);
-    assert.deepEqual(m.takeRemaining(), clist([['+',4,0,'*0','abcd'],['+',1,1,null,'\n']]));
-  });
-"""
-
-
 def test__line_mutator__newline_at_the_end() -> None:
     mutator = LineMutator(EncodedOperations(encoded="+4|1+1", char_bank="abcd\n"))
 
-    assert str(mutator.take_remaining().encode()) == ""
+    assert mutator.take_remaining() == OperationList(
+        [
+            Operation.insert(4, 0, "abcd"),
+            Operation.insert(1, 1, "\n"),
+        ]
+    )
 
 
 def test__line_mutator__decompose_into_subcomponents() -> None:

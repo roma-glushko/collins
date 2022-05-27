@@ -1,5 +1,7 @@
 import re
-from typing import TYPE_CHECKING, Final, Match
+from contextlib import suppress
+from copy import deepcopy
+from typing import TYPE_CHECKING, Callable, Final, Match, Optional
 
 from collins.encode import decode_number, encode_number
 from collins.mutators.text import TextMutator
@@ -7,6 +9,7 @@ from collins.operations import (
     OPERATION_LIST_END,
     EncodedOperations,
     Operation,
+    OperationIterator,
     OperationList,
     OperationTypes,
 )
@@ -19,8 +22,66 @@ HEADER_REGEX: Final[
     str
 ] = rf"{SIGNATURE}(?P<original_length>[0-9a-z]+)(?P<diff_sign>[><])(?P<new_len_diff>[0-9a-z]+)|"
 
+SplitFunc = Callable[[Operation, Operation], bool]
 
-class ChangeSet:
+
+class ParallelOperationIterator:
+    def __init__(
+        self,
+        first_ops: OperationList,
+        second_ops: OperationList,
+        splitter: SplitFunc,
+    ) -> None:
+        self.first_ops = first_ops
+        self.second_ops = second_ops
+        self.splitter = splitter
+
+    def __iter__(self) -> "ParallelOperationIterator":
+        self.first_iterator: OperationIterator = iter(self.first_ops)
+        self.second_iterator: OperationIterator = iter(self.second_ops)
+
+        self.first_part: Optional[Operation] = None
+        self.second_part: Optional[Operation] = None
+
+        return self
+
+    def __next__(self) -> tuple[Optional[Operation], Optional[Operation]]:
+        next_first: Optional[Operation] = None
+        next_second: Optional[Operation] = None
+
+        with suppress(StopIteration):
+            next_first = self.first_part or next(self.first_iterator)
+
+        with suppress(StopIteration):
+            next_second = self.second_part or next(self.second_iterator)
+
+        if not next_first and not next_second:
+            raise StopIteration()
+
+        if next_first and next_second:
+            # pre-splitting into equal slices greatly reduces
+            # number of code branches and makes code easier to read
+            need_splitting: bool = self.splitter(next_first, next_second)
+
+            if not need_splitting:
+                return next_first, next_second
+
+            if next_first.char_n > next_second.char_n:
+                self.first_part = deepcopy(next_first).ltrim(
+                    next_second.char_n, next_second.line_no
+                )
+                next_first.rtrim(next_second.char_n, next_second.line_no)
+
+            if next_first.char_n < next_second.char_n:
+                self.second_part = deepcopy(next_second).ltrim(
+                    next_first.char_n, next_first.line_no
+                )
+                next_second.rtrim(next_first.char_n, next_first.line_no)
+
+        return next_first, next_second
+
+
+class Changeset:
     def __init__(
         self,
         original_doc_length: int,
@@ -35,45 +96,6 @@ class ChangeSet:
             if new_doc_length is not None
             else self.original_doc_length + self.operations.delta_len()
         )
-
-    """
-    Changeset.prototype.applyTo = function(doc) {
-      var mut = doc.mutate();
-      this._ops.reorder();
-      this._ops.map(function(op, index) {
-        // if we reuse (don't pack) changeset object, we can end up with
-        // empty operations sometimes, do not process them.
-        if(op.chars == 0) {
-          return;
-        }
-    
-        if(op.opcode == OpComponent.INSERT) {
-          mut.insert(op);
-        } else if (op.opcode == OpComponent.REMOVE) {
-          // Since we can have multiline remove ops, remove() can
-          // return an array of components instead of single one.
-          // But since they all should be mergeable, we can run a quick
-          // reduce operation and compare the result
-          var removed = mut.remove(op.chars, op.lines)
-                          .reduce(function(prev, op) {
-                            return prev.append(op);
-                          }, new OpComponent());
-    
-          assert(removed.equals(op, true), 'actual does not match removed');
-        } else if (op.opcode == OpComponent.KEEP) {
-          if(op.attribs.isEmpty()) {
-            mut.skip(op.chars, op.lines);
-          } else {
-            mut.applyFormat(op);
-          }
-        }
-      });
-      mut.finish();
-    
-      assert.equal(this._newLen, doc.length(), 'final document length does not match');
-      return doc;
-    };
-    """
 
     def __call__(self, document: "Document") -> "Document":
         """
@@ -107,74 +129,24 @@ class ChangeSet:
 
         return document
 
-    def compose(self, changeset: "ChangeSet") -> "ChangeSet":
+    def compose(self, changeset: "Changeset") -> "Changeset":
         """
         Compose this changeset with other changeset, producing cumulative result of both changes
         """
 
-        self.operations.reorder()
-        changeset.operations.reorder()
-
-        """
-        var newOps = util.zip(this._ops, otherCS._ops, 
-    function(thisOp, otherOp) {
-      var noSplit = thisOp.opcode == OpComponent.REMOVE || otherOp.opcode == OpComponent.INSERT;
-      // KEEPS can be replaced by REMOVEs
-      var hasKeep = thisOp.opcode == OpComponent.KEEP || otherOp.opcode == OpComponent.KEEP;
-      // REMOVEs can affect KEEPs and INSERTs but not other REMOVEs
-      var hasRemoveActual = (thisOp.opcode != otherOp.opcode) && (thisOp.opcode == OpComponent.REMOVE || otherOp.opcode == OpComponent.REMOVE); 
-      // in both cases we can split ops into equal slices
-      return (hasKeep || hasRemoveActual) && !noSplit;
-    },
-    function(thisOp, otherOp, opOut) {
-      if (thisOp.opcode == OpComponent.REMOVE || !otherOp.opcode) {
-        // if we've removed something, it cannot be undone by next op
-        thisOp.copyTo(opOut);
-        thisOp.skip();
-      } else if (otherOp.opcode == OpComponent.INSERT || !thisOp.opcode) {
-        // if other is inserting something it should be inserted
-        otherOp.copyTo(opOut);
-        otherOp.skip();
-      } else {
-        if(otherOp.opcode == OpComponent.REMOVE) {
-          // at this point we're operating on actual chars (KEEP or INSERT) in the target string
-          // we don't validate KEEPs since they just add format and not keep final attributes list
-          var validRemove = (thisOp.opcode == OpComponent.KEEP) || thisOp.equals(otherOp, true);
-          assert(validRemove, 'removed in composition does not match original' + JSON.stringify(thisOp) + JSON.stringify(otherOp));
-
-          // if there was no insert on our side, just keep the other op,
-          // overwise we're removing what was inserted and will skip both
-          if (thisOp.opcode == OpComponent.KEEP) {
-            // undo format changes made by thisOp and compose with otherOp
-            otherOp.copyTo(opOut)
-              .composeAttributes(thisOp.attribs.invert());
-          }
-        } else if(otherOp.opcode == OpComponent.KEEP) {
-          // here, thisOp is also KEEP or INSERT, so just copy it over and compose with
-          // otherOp
-          thisOp.copyTo(opOut)
-            .composeAttributes(otherOp.attribs);
-        }
-
-        thisOp.skip();
-        otherOp.skip();
-      }
-    });
-        """
-
-        def split(first_op: Operation, second_op: Operation) -> bool:
+        def splitter(first_op: Operation, second_op: Operation) -> bool:
             no_split: bool = (
                 first_op.type == OperationTypes.DELETE
                 or second_op.type == OperationTypes.INSERT
             )
 
-            # KEEPS can be replaced by REMOVEs
+            # KEEPS can be replaced by DELETEs
             has_keep: bool = (
                 first_op.type == OperationTypes.KEEP
                 or second_op.type == OperationTypes.KEEP
             )
 
-            # REMOVEs can affect KEEPs and INSERTs but not other REMOVEs
+            # REMOVEs can affect KEEPs and INSERTs but not other DELETEs
             has_remove_actual: bool = (first_op.type != second_op.type) and (
                 first_op.type == OperationTypes.DELETE
                 or second_op.type == OperationTypes.DELETE
@@ -182,24 +154,67 @@ class ChangeSet:
 
             return (has_keep or has_remove_actual) and not no_split
 
-        composed_operations = []
+        self.operations.reorder()
+        changeset.operations.reorder()
 
-        return ChangeSet(
+        operation_iterator: ParallelOperationIterator = ParallelOperationIterator(
+            first_ops=self.operations,
+            second_ops=changeset.operations,
+            splitter=splitter,
+        )
+
+        composed_operations: list[Operation] = []
+
+        for first_operation, second_operation in iter(operation_iterator):
+            if (
+                first_operation and first_operation.type == OperationTypes.DELETE
+            ) or not second_operation:
+                # if we've removed something, it cannot be undone by next op
+                composed_operations.append(first_operation)
+                continue
+
+            if (
+                second_operation and second_operation.type == OperationTypes.INSERT
+            ) or not first_operation:
+                # if other is inserting something it should be inserted
+                composed_operations.append(second_operation)
+                continue
+
+            if second_operation.type == OperationTypes.DELETE:
+                # at this point we're operating on actual chars (KEEP or INSERT) in the target string
+                # we don't validate KEEPs since they just add format and not keep final attributes list
+
+                # delete_valid: bool = \
+                #  first_operation.type == OperationTypes.KEEP or first_operation == second_operation
+                # TODO: assert
+
+                # if there was no insert on our side, just keep the other op,
+                # otherwise we're removing what was inserted and will skip both
+                if first_operation.type == OperationTypes.KEEP:
+                    # undo format changes made by first_operation and compose with second_operation
+                    composed_operations.append(second_operation)
+                    continue
+
+            if second_operation.type == OperationTypes.KEEP:
+                # here, thisOp is also KEEP or INSERT, so just copy it over and compose with second_operation
+                composed_operations.append(first_operation)
+
+        return Changeset(
             original_doc_length=self.original_doc_length,
             new_doc_length=changeset.new_doc_length,
             operations=OperationList(composed_operations),
         )
 
-    def invert(self) -> "ChangeSet":
+    def invert(self) -> "Changeset":
         inverted_operations = self.operations.invert()
 
-        return ChangeSet(
+        return Changeset(
             original_doc_length=self.original_doc_length,
             new_doc_length=self.new_doc_length,
             operations=inverted_operations,
         )
 
-    def transform(self, first_op: Operation, second_op: Operation) -> "ChangeSet":
+    def transform(self, first_op: Operation, second_op: Operation) -> "Changeset":
         """
         Transform this changeset against other changeset.
 
@@ -224,7 +239,10 @@ class ChangeSet:
         enc_operations = self.operations.encode()
 
         encoded_original_length: str = encode_number(self.original_doc_length)
-        encoded_len_diff: str = f"{'>' if enc_operations.delta_len >= 0 else '<'}{encode_number(abs(enc_operations.delta_len))}"
+        encoded_len_diff: str = (
+            f"{'>' if enc_operations.delta_len >= 0 else '<'}"
+            f"{encode_number(abs(enc_operations.delta_len))}"
+        )
 
         return (
             f"{SIGNATURE}"
@@ -232,7 +250,7 @@ class ChangeSet:
         )
 
     @classmethod
-    def decode(cls, serialized_changeset: str) -> "ChangeSet":
+    def decode(cls, serialized_changeset: str) -> "Changeset":
         header_part_matches: Match[str] = re.search(HEADER_REGEX, serialized_changeset)
 
         if not header_part_matches:

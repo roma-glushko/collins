@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 
-from collins.changeset import ChangeSet
+from collins.changeset import Changeset
 from collins.document import Document
 from collins.operations import OperationList
 
@@ -49,5 +49,5 @@ class ChangeSetBuilder:
         """
         self.operations.extend(self.text_mutator.take(char_n, line_no).invert())
 
-    def finish(self) -> "ChangeSet":
-        return ChangeSet()
+    def finish(self) -> "Changeset":
+        return Changeset()

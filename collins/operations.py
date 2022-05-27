@@ -136,6 +136,14 @@ class Operation:
             delta_len=self.delta_len(),
         )
 
+    def __eq__(self, other: "Operation") -> bool:
+        return (
+            self.type == other.type
+            and self.char_n == other.char_n
+            and self.line_no == other.line_no
+            and self.char_bank == other.char_bank
+        )
+
     def __repr__(self) -> str:
         reps: dict[OperationTypes, str] = {
             OperationTypes.KEEP: "Keep",
@@ -219,6 +227,12 @@ class OperationList:
 
     def __getitem__(self, i: int) -> Operation:
         return self._operations[i]
+
+    def __eq__(self, other: "OperationList") -> bool:
+        if len(self) != len(other):
+            return False
+
+        return all((first == second for first, second in zip(self, other)))
 
     def reorder(self) -> None:
         """
@@ -305,6 +319,41 @@ class OperationList:
             )
         )
 
+    """
+        function flush(finalize) {
+        if(buf.last.opcode) {
+          if(finalize && buf.last.opcode == OpComponent.KEEP && buf.last.attribs.isEmpty()) {
+            // final keep, drop
+          } else {
+            push(res, buf.last.pack(optPool));
+            buf.last.clear();
+            if(buf.inner.opcode) {
+              push(res, buf.inner.pack(optPool));
+              buf.inner.clear();
+            }
+          }
+        }
+      }
+
+      function append(op) {
+        if(buf.last.opcode == op.opcode && buf.last.attribs.equals(op.attribs)) {
+          if(op.lines > 0) {
+            // last and inner are all mergable into multi-line op
+            buf.last.append(buf.inner).append(op);
+            buf.inner.clear();
+          } else if (buf.last.lines == 0) {
+            // last and op are both in-line
+            buf.last.append(op);
+          } else {
+            buf.inner.append(op);
+          }
+        } else {
+          flush();
+          op.copyTo(buf.last);
+        }
+      }
+    """
+
     def encode(self) -> EncodedOperations:
         """
         Packs components list into compact form that can be sent over the network
@@ -321,14 +370,26 @@ class OperationList:
         inner_operation: Optional[Operation] = None
 
         for operation in self._operations:
-            if last_operation and operation.type == last_operation.type:
-                if operation.line_no > 0:
+            if not last_operation or last_operation.type != operation.type:
+                if last_operation:
+                    encoded_operations += last_operation.encode()
+
+                    if inner_operation:
+                        encoded_operations += inner_operation.encode()
+                        inner_operation = None
+
+                last_operation = operation
+                continue
+
+            if last_operation and last_operation.type == operation.type:
+                if operation.line_no:
                     # last and inner are all mergable into multi-line op
                     last_operation.append(inner_operation)
                     last_operation.append(operation)
+                    inner_operation = None
                     continue
 
-                if last_operation.line_no == 0:
+                if not last_operation.line_no:
                     # last and op are both in-line
                     last_operation.append(operation)
                     continue
@@ -338,23 +399,9 @@ class OperationList:
                 else:
                     inner_operation.append(operation)
 
-                continue
-
-            if not last_operation:
-                last_operation = operation
-                continue
-
-            encoded_operations += last_operation.encode()
-
-            if inner_operation:
-                encoded_operations += inner_operation.encode()
-                inner_operation = None
-
-            last_operation = operation
-
         # flush the last
 
-        if not last_operation or not last_operation.type:
+        if not last_operation:
             return encoded_operations
 
         if last_operation.type == OperationTypes.KEEP:
@@ -363,7 +410,7 @@ class OperationList:
 
         encoded_operations += last_operation.encode()
 
-        if inner_operation and inner_operation.type:
+        if inner_operation:
             encoded_operations += inner_operation.encode()
 
         return encoded_operations

@@ -97,8 +97,8 @@ class TextMutator:
         char_n: int = 0
 
         if self.current_line:
-            char_n += self.current_line.remaining()
-            self._next_line()
+            char_n += self.current_line.remaining
+            next(self)  # TODO: return the next line probably
             line_no -= 1
 
         # unlike _takeLines(), we do not parse each next line, just take the length
