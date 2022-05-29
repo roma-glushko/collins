@@ -53,18 +53,24 @@ class ParallelOperationIterator:
         next_second: Optional[Operation] = None
 
         with suppress(StopIteration):
-            next_first = (
-                (len(self._first_backlist) and self._first_backlist.pop())
-                or self.first_part
-                or next(self.first_iterator)
-            )
+            next_first = len(self._first_backlist) and self._first_backlist.pop()
+
+            if not next_first:
+                next_first = self.first_part
+                self.first_part = None
+
+            if not next_first:
+                next_first = next(self.first_iterator)
 
         with suppress(StopIteration):
-            next_second = (
-                (len(self._second_backlist) and self._second_backlist.pop())
-                or self.second_part
-                or next(self.second_iterator)
-            )
+            next_second = len(self._second_backlist) and self._second_backlist.pop()
+
+            if not next_second:
+                next_second = self.second_part
+                self.second_part = None
+
+            if not next_second:
+                next_second = next(self.second_iterator)
 
         if not next_first and not next_second:
             raise StopIteration()
