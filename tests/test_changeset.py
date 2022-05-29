@@ -1,6 +1,6 @@
 import pytest as pytest
 
-from collins.changeset import Changeset
+from collins.changeset import Changeset, TransformSides
 from collins.operations import EncodedOperations, OperationList
 
 
@@ -53,3 +53,41 @@ def test__changeset__compose(
     composed_changeset: Changeset = changeset_one.compose(changeset_two)
 
     assert composed_changeset.encode() == result_changeset
+
+
+@pytest.mark.parametrize(
+    "enc_changeset_one, enc_changeset_two, side, result_changeset",
+    [
+        ("C:0>2+2$ab", "C:0>2+2$cd", TransformSides.LEFT, "C:2>2=2+2$ab"),
+        ("C:0>2+2$cd", "C:0>2+2$ab", TransformSides.RIGHT, "C:2>2+2$cd"),
+        ("C:0>2+2$ab", "C:0>1|1+1$\n", TransformSides.LEFT, "C:1>2+2$ab"),
+        ("C:0>2+2$ab", "C:0>1|1+1$\n", TransformSides.RIGHT, "C:1>2+2$ab"),
+        (
+            "C:0>2|1+1+1$\na",
+            "C:0>2|1+1+1$\nb",
+            TransformSides.LEFT,
+            "C:2>2|1=1=1|1+1+1$\na",
+        ),
+        ("C:0>2|1+1+1$\nb", "C:0>2|1+1+1$\na", TransformSides.RIGHT, "C:2>2|1+1+1$\nb"),
+        ("C:2>1+1$a", "C:2<1-1$b", TransformSides.LEFT, "C:1>1+1$a"),
+        ("C:2>1+1$a", "C:2<1-1$b", TransformSides.RIGHT, "C:1>1+1$a"),
+        ("C:8<4-4$abcd", "C:8<2-2$ab", TransformSides.LEFT, "C:6<2-2$cd"),
+        ("C:8<2-2$ab", "C:8<4-4$abcd", TransformSides.LEFT, "C:4>0$"),
+        ("C:8<2-2$ab", "C:8>0=4", TransformSides.LEFT, "C:8<2-2$ab"),
+        ("C:8>2=8+2$ab", "C:8<4-4$abcd", TransformSides.LEFT, "C:4>2=4+2$ab"),
+        ("C:8>2=4+2$ab", "C:8<6-6$abcdef", TransformSides.LEFT, "C:2>2+2$ab"),
+        ("C:4>1|1=4+1$a", "C:4>5+5$bcdef", TransformSides.LEFT, "C:9>1|1=9+1$a"),
+    ],
+)
+def test__changeset__transform(
+    enc_changeset_one: str,
+    enc_changeset_two: str,
+    side: TransformSides,
+    result_changeset: str,
+) -> None:
+    changeset_one: Changeset = Changeset.decode(enc_changeset_one)
+    changeset_two: Changeset = Changeset.decode(enc_changeset_two)
+
+    transformed_changeset: Changeset = changeset_one.transform(changeset_two, side)
+
+    assert transformed_changeset.encode() == result_changeset

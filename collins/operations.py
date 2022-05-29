@@ -319,41 +319,6 @@ class OperationList:
             )
         )
 
-    """
-        function flush(finalize) {
-        if(buf.last.opcode) {
-          if(finalize && buf.last.opcode == OpComponent.KEEP && buf.last.attribs.isEmpty()) {
-            // final keep, drop
-          } else {
-            push(res, buf.last.pack(optPool));
-            buf.last.clear();
-            if(buf.inner.opcode) {
-              push(res, buf.inner.pack(optPool));
-              buf.inner.clear();
-            }
-          }
-        }
-      }
-
-      function append(op) {
-        if(buf.last.opcode == op.opcode && buf.last.attribs.equals(op.attribs)) {
-          if(op.lines > 0) {
-            // last and inner are all mergable into multi-line op
-            buf.last.append(buf.inner).append(op);
-            buf.inner.clear();
-          } else if (buf.last.lines == 0) {
-            // last and op are both in-line
-            buf.last.append(op);
-          } else {
-            buf.inner.append(op);
-          }
-        } else {
-          flush();
-          op.copyTo(buf.last);
-        }
-      }
-    """
-
     def encode(self) -> EncodedOperations:
         """
         Packs components list into compact form that can be sent over the network

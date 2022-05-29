@@ -1,6 +1,7 @@
 import re
 from contextlib import suppress
 from copy import deepcopy
+from enum import Enum
 from typing import TYPE_CHECKING, Callable, Final, List, Match, Optional
 
 from collins.encode import decode_number, encode_number
@@ -23,6 +24,11 @@ HEADER_REGEX: Final[
 ] = rf"{SIGNATURE}(?P<original_length>[0-9a-z]+)(?P<diff_sign>[><])(?P<new_len_diff>[0-9a-z]+)|"
 
 SplitFunc = Callable[[Operation, Operation], bool]
+
+
+class TransformSides(str, Enum):
+    LEFT = "left"
+    RIGHT = "right"
 
 
 class ParallelOperationIterator:
@@ -239,7 +245,7 @@ class Changeset:
             operations=inverted_operations,
         )
 
-    def transform(self, first_op: Operation, second_op: Operation) -> "Changeset":
+    def transform(self, changeset: "Changeset", side: TransformSides) -> "Changeset":
         """
         Transform this changeset against other changeset.
 
@@ -258,7 +264,117 @@ class Changeset:
         this time it should take otherOp as first-win. In the list
         otherOp is to the "right"
         """
-        pass
+
+        def splitter(first_op: Operation, second_op: Operation) -> bool:
+            # INSERTs are handled unsplitted, always
+            has_insert: bool = (
+                first_op.type == OperationTypes.INSERT
+                or second_op.type == OperationTypes.INSERT
+            )
+
+            # KEEPs can be reduced by REMOVEs or extended by INSERTs
+            has_keep: bool = (
+                first_op.type == OperationTypes.KEEP
+                or second_op.type == OperationTypes.KEEP
+            )
+
+            # REMOVEs can reduce KEEPs other REMOVEs
+            has_remove: bool = (
+                first_op.type == OperationTypes.DELETE
+                or second_op.type == OperationTypes.DELETE
+            )
+
+            # in both situation we can split ops into equal slices
+            return (has_keep or has_remove) and not has_insert
+
+        self.operations.reorder()
+        changeset.operations.reorder()
+
+        operation_iterator: ParallelOperationIterator = ParallelOperationIterator(
+            first_ops=self.operations,
+            second_ops=changeset.operations,
+            splitter=splitter,
+        )
+
+        len_delta: int = 0
+        transformed_operations: list[Operation] = []
+
+        for first_operation, second_operation in iter(operation_iterator):
+            next_operation: Optional[Operation] = None
+
+            if (
+                first_operation
+                and second_operation
+                and (
+                    first_operation.type == OperationTypes.INSERT
+                    or second_operation.type == OperationTypes.INSERT
+                )
+            ):
+
+                left_side: bool = side == TransformSides.LEFT
+                first_char, second_char = None, None
+
+                if first_operation.char_bank:
+                    first_char = first_operation.char_bank[0]
+
+                if second_operation.char_bank:
+                    second_char = second_operation.char_bank[0]
+
+                if first_operation.type != second_operation.type:
+                    # the op that does insert goes first
+                    left_side = second_operation.type == OperationTypes.INSERT
+
+                if (
+                    first_char == "\n" or second_char == "\n"
+                ) and first_char != second_char:
+                    # insert string that doesn't start with a newline first
+                    # to not break up lines
+                    left_side = second_char != "\n"
+
+                if left_side:
+                    # other op goes first
+                    next_operation = Operation.keep(
+                        second_operation.char_n,
+                        second_operation.line_no,
+                    )
+                    operation_iterator.append_first_back(first_operation)
+                else:
+                    next_operation = first_operation
+                    operation_iterator.append_second_back(second_operation)
+
+                transformed_operations.append(next_operation)
+                len_delta += next_operation.delta_len()
+                continue
+
+            # If otherOp is not removing something (that could mean it already removed thisOp)
+            # then keep our operation
+
+            if first_operation and (
+                not second_operation or second_operation.type != OperationTypes.DELETE
+            ):
+                next_operation = first_operation
+
+                if first_operation.type == OperationTypes.DELETE and second_operation:
+                    # if thisOp is removing what was reformatted, we need to calculate new attributes for removal
+                    # opOut.composeAttributes(otherOp.attribs);
+                    pass
+
+                if first_operation.type == OperationTypes.KEEP and second_operation:
+                    # both keeps here, also transform attributes
+                    # opOut.transformAttributes(otherOp.attribs);
+                    pass
+
+            # else, if otherOp is removing, skip thisOp ('-' or '=' at this point)
+
+            if next_operation:
+                transformed_operations.append(next_operation)
+                len_delta += next_operation.delta_len()
+
+        return Changeset(
+            original_doc_length=changeset.new_doc_length,
+            new_doc_length=changeset.new_doc_length + len_delta,
+            operations=OperationList(transformed_operations),
+        )
 
     def encode(self) -> str:
         enc_operations = self.operations.encode()

@@ -8,7 +8,7 @@ from collins.operations import OperationList
 NEW_LINE_PATTERN: str = r"\n"
 
 
-class ChangeSetBuilder:
+class ChangesetBuilder:
     def __init__(self, document: Optional["Document"] = None) -> None:
         self.document = document or Document()
         self.text_mutator = self.document.mutate()
