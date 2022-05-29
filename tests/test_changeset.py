@@ -37,6 +37,11 @@ def test__changeset__encode() -> None:
         ("C:0>3+3$abc", "C:3>3=3+3$def", "C:0>6+6$abcdef"),
         ("C:0>2+2$ab", "C:2>1|1+1$\n", "C:0>3|1+1+2$\nab"),
         # ("C:0>3+3$abc", "C:3<1=1-1$b", "C:0>2+2$ac"),
+        # ("C:0>3+3$abc", "C:3<1-2+1$abd", "C:0>2+2$dc"),
+        # test ParallelOperationIterator
+        ("C:8<4-4$abcd", "C:4<2|2-2$\n\n", "C:8<6|2-6$abcd\n\n"),
+        ("C:4>0=2", "C:4<2-2$ab", "C:4<2-2$ab"),
+        ("C:3<3|1-3$12\n", "C:0>2+2$XY", "C:3<1|1-3+2$12\nXY"),
     ],
 )
 def test__changeset__compose(
@@ -47,4 +52,4 @@ def test__changeset__compose(
 
     composed_changeset: Changeset = changeset_one.compose(changeset_two)
 
-    assert result_changeset == composed_changeset.encode()
+    assert composed_changeset.encode() == result_changeset

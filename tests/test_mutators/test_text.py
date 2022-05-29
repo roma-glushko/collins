@@ -67,6 +67,7 @@ def test__test_mutator__remove_from_middle_to_the_end_and_insert() -> None:
     assert str(actual_result) == ["|1+2$aX"]
 
 
+@pytest.mark.skip("Need to implement TextMutator")
 def test__text_mutator__complex_mutations() -> None:
     mutator = TextMutator(
         [

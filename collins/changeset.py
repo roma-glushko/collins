@@ -1,7 +1,7 @@
 import re
 from contextlib import suppress
 from copy import deepcopy
-from typing import TYPE_CHECKING, Callable, Final, Match, Optional
+from typing import TYPE_CHECKING, Callable, Final, List, Match, Optional
 
 from collins.encode import decode_number, encode_number
 from collins.mutators.text import TextMutator
@@ -40,6 +40,9 @@ class ParallelOperationIterator:
         self.first_iterator: OperationIterator = iter(self.first_ops)
         self.second_iterator: OperationIterator = iter(self.second_ops)
 
+        self._first_backlist: List[Operation] = []
+        self._second_backlist: List[Operation] = []
+
         self.first_part: Optional[Operation] = None
         self.second_part: Optional[Operation] = None
 
@@ -50,10 +53,18 @@ class ParallelOperationIterator:
         next_second: Optional[Operation] = None
 
         with suppress(StopIteration):
-            next_first = self.first_part or next(self.first_iterator)
+            next_first = (
+                (len(self._first_backlist) and self._first_backlist.pop())
+                or self.first_part
+                or next(self.first_iterator)
+            )
 
         with suppress(StopIteration):
-            next_second = self.second_part or next(self.second_iterator)
+            next_second = (
+                (len(self._second_backlist) and self._second_backlist.pop())
+                or self.second_part
+                or next(self.second_iterator)
+            )
 
         if not next_first and not next_second:
             raise StopIteration()
@@ -79,6 +90,12 @@ class ParallelOperationIterator:
                 next_second.rtrim(next_first.char_n, next_first.line_no)
 
         return next_first, next_second
+
+    def append_first_back(self, operation: Operation) -> None:
+        self._first_backlist.append(operation)
+
+    def append_second_back(self, operation: Operation) -> None:
+        self._second_backlist.append(operation)
 
 
 class Changeset:
@@ -171,6 +188,7 @@ class Changeset:
             ) or not second_operation:
                 # if we've removed something, it cannot be undone by next op
                 composed_operations.append(first_operation)
+                operation_iterator.append_second_back(second_operation)
                 continue
 
             if (
@@ -178,9 +196,10 @@ class Changeset:
             ) or not first_operation:
                 # if other is inserting something it should be inserted
                 composed_operations.append(second_operation)
+                operation_iterator.append_first_back(first_operation)
                 continue
 
-            if second_operation.type == OperationTypes.DELETE:
+            if second_operation and second_operation.type == OperationTypes.DELETE:
                 # at this point we're operating on actual chars (KEEP or INSERT) in the target string
                 # we don't validate KEEPs since they just add format and not keep final attributes list
 
@@ -190,7 +209,7 @@ class Changeset:
 
                 # if there was no insert on our side, just keep the other op,
                 # otherwise we're removing what was inserted and will skip both
-                if first_operation.type == OperationTypes.KEEP:
+                if first_operation and first_operation.type == OperationTypes.KEEP:
                     # undo format changes made by first_operation and compose with second_operation
                     composed_operations.append(second_operation)
                     continue
@@ -266,6 +285,9 @@ class Changeset:
 
         header_length: int = len(header_part_matches[0])
         operation_list_end: int = serialized_changeset.find(OPERATION_LIST_END)
+
+        if operation_list_end < 0:
+            operation_list_end = len(serialized_changeset)
 
         encoded_operations: str = serialized_changeset[header_length:operation_list_end]
         char_bank: str = serialized_changeset[operation_list_end + 1 :]
