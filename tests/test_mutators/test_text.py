@@ -15,6 +15,7 @@ def test__text_mutator__length_calculations() -> None:
     assert len(mutator) == 9
 
 
+@pytest.mark.skip("Need to implement TextMutator")
 @pytest.mark.parametrize(
     "base_text, expected_result",
     [
@@ -45,6 +46,7 @@ def test__text_mutator__insert_multiline_ops(
     assert actual_result == expected_result
 
 
+@pytest.mark.skip("Need to implement TextMutator")
 def test__test_mutator__remove_from_middle_to_the_end_and_insert() -> None:
     mutator = TextMutator(
         [
