@@ -1,0 +1,16 @@
+html, body {
+    height: 100%;
+}
+
+
+#live-area-app {
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-flow: column;
+}
+
+#live-area-app .header h2 {
+    font-size: 2rem;
+    margin: 0.5rem
+}

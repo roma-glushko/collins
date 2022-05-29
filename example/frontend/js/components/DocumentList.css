@@ -1,0 +1,26 @@
+ul.document-list {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 1rem;
+    flex-wrap: wrap;
+}
+
+ul.document-list li {
+    max-width: 20rem;
+    margin: 1rem;
+    padding: 1rem;
+    border: 5px solid #eee;
+}
+
+ul.document-list li a {
+    color: #000;
+    font-weight: normal;
+    text-decoration: none;
+}
+
+ul.document-list li:hover {
+    cursor: pointer;
+    background-color: #eee;
+    transition: background-color 600ms;
+}
