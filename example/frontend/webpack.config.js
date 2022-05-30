@@ -1,7 +1,7 @@
 module.exports = {
     entry: {
         "document-list": "./js/DocumentList.tsx",
-        "document-view": "./js/LiveArea.tsx",
+        "document-view": "./js/DocumentView.tsx",
     },
     target: "web",
     module: {

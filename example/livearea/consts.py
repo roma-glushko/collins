@@ -2,9 +2,9 @@ from typing import Final
 
 from livearea.managers.documents import Document
 
-DOCUMENT_MAP: Final[dict[str, Document]] = {
-    1: Document(
-        id=1,
+DOCUMENT_MAP: Final[dict[int, Document]] = {
+    0: Document(
+        id=0,
         title="About Australia 🇦🇺",
         body="Australia, officially the Commonwealth of Australia, "
              "is a sovereign country comprising the mainland of the Australian continent, "
@@ -16,8 +16,8 @@ DOCUMENT_MAP: Final[dict[str, Document]] = {
              "with deserts in the centre, "
              "tropical rainforests in the north-east, and mountain ranges in the south-east."
     ),
-    2: Document(
-        id=2,
+    1: Document(
+        id=1,
         title="About Japan 🇯🇵",
         body="Japan is an island country in East Asia. "
              "It is situated in the northwest Pacific Ocean, and is bordered on the west by the Sea of Japan, "
@@ -28,8 +28,8 @@ DOCUMENT_MAP: Final[dict[str, Document]] = {
              "Tokyo is the nation's capital and largest city; "
              "other major cities include Yokohama, Osaka, Nagoya, Sapporo, Fukuoka, Kobe, and Kyoto."
     ),
-    3: Document(
-        id=3,
+    2: Document(
+        id=2,
         title="About Ukraine 🇺🇦",
         body="Ukraine is a country in Eastern Europe. "
              "It is the second largest country in Europe after Russia, "

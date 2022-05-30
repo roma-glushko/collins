@@ -1,7 +1,9 @@
 import logging
 
 from fastapi import FastAPI
-from livearea.managers import ConnectionManager
+
+from livearea.consts import DOCUMENT_MAP
+from livearea.managers import ConnectionManager, DocumentManager
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,11 +22,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 async def on_startup() -> None:
     logger.info("Starting up the Livearea app..")
 
     app.state.connections = ConnectionManager()
+    app.state.documents = DocumentManager(DOCUMENT_MAP)
     app.state.templates = Jinja2Templates(directory="templates")
 
 

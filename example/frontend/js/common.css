@@ -4,6 +4,17 @@ body {
     font-family: 'Alegreya Sans', sans-serif;
 }
 
+html, body {
+    height: 100%;
+}
+
+#livearea-app {
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-flow: column;
+}
+
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Exo 2', sans-serif;
 }

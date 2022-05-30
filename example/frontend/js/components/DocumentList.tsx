@@ -2,9 +2,11 @@ import * as React from 'react';
 
 import {useState} from "@hookstate/core";
 
+import IDocument from "../entities/Document";
+
 import "./DocumentList.css"
 
-const fetchDocumentList = () => {
+const fetchDocumentList = (): Promise<IDocument[]> => {
     return fetch("http://localhost:3003/api/documents/")
         .then(response => response.json())
 }
@@ -24,14 +26,14 @@ const DocumentList = (): JSX.Element => {
     }
 
     return <ul className={`document-list`}>
-        { state.get().map((document) => (
+        {state.get().map((document: IDocument) => (
         <li key={document.id}>
             <a href={`http://localhost:3003/documents/${document.id}/`}>
                 <h3>{document.title}</h3>
                 <p>{cutDescription(document.body)}</p>
             </a>
         </li>
-        )}
+        ))}
     </ul>
 }
 

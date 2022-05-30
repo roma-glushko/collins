@@ -1,0 +1,7 @@
+.action-log {
+    min-width: 400px;
+    scroll-behavior: smooth;
+    padding-left: 1rem;
+    overflow-y: scroll;
+    height: 400px;
+}

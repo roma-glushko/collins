@@ -6,7 +6,7 @@ export const receivedMessages: State<string[]> = createState([]) as State<string
 
 const BASE_URL: string = 'localhost:3003'
 
-export const Websocket = (props: {sessionID: string}) => {
+export const Websocket = (props: {documentID: string, sessionID: string}) => {
     const messages = useState(receivedMessages);
 
     useEffect(() => {
@@ -19,7 +19,7 @@ export const Websocket = (props: {sessionID: string}) => {
         // this.socket.send(input.value)
         }
 
-        const socket = new WebSocket(`ws://${BASE_URL}/ws/${props.sessionID}`);
+        const socket = new WebSocket(`ws://${BASE_URL}/documents/${props.documentID}/?client_id=${props.sessionID}`);
         socket.onmessage = onReceive
     })
 

@@ -1,12 +1,11 @@
 import logging
 
-from fastapi import Request, WebSocket, WebSocketDisconnect, Query
+from fastapi import Request, WebSocket, WebSocketDisconnect, Query, HTTPException
 from fastapi.responses import HTMLResponse
 
 from livearea.app import app
-from livearea.consts import DOCUMENT_MAP
 from livearea.entities import Document
-from livearea.managers import ConnectionManager
+from livearea.managers import ConnectionManager, DocumentManager
 
 logger = logging.getLogger(__name__)
 
@@ -21,24 +20,59 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request}, media_type="text/html")
 
 
-@app.get("/api/documents")
+@app.get("/documents/{document_id}/", response_class=HTMLResponse)
+async def view_document(request: Request, document_id: str):
+    templates = app.state.templates
+
+    return templates.TemplateResponse(
+        "document_view.html",
+        {"request": request, "document_id": document_id},
+        media_type="text/html"
+    )
+
+
+@app.get("/api/documents/")
 async def list_documents() -> list[Document]:
+    documents: DocumentManager = app.state.documents
+
     return [
         doc
-        for doc in DOCUMENT_MAP.values()
+        for doc in documents
     ]
+
+
+@app.get("/api/documents/{document_id}/")
+async def get_document(document_id: int) -> Document:
+    try:
+        documents: DocumentManager = app.state.documents
+
+        return documents[document_id]
+    except KeyError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Document '{document_id}' doesn't exist. Please double check the documentID",
+        )
 
 
 @app.websocket("/documents/{document_id}/")
 async def websocket_endpoint(
-        websocket: WebSocket,
-        document_id: str,
-        client_id: str = Query(...),
+    websocket: WebSocket,
+    document_id: int,
+    client_id: str = Query(...),
 ) -> None:
+    documents: DocumentManager = app.state.documents
     connections: ConnectionManager = app.state.connections
 
+    try:
+        document = documents[document_id]
+    except KeyError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Document '{document_id}' doesn't exist",
+        )
+
     await connections.join(document_id, client_id, websocket)
-    await connections.broadcast(document_id, f"#{client_id}: Joined the chat")
+    await connections.broadcast(document_id, f"Client \"{client_id}\" has joined the \"{document.title}\" document")
 
     try:
         while True:
@@ -47,4 +81,4 @@ async def websocket_endpoint(
             await connections.broadcast(document_id, f"#{client_id}: {data}")
     except WebSocketDisconnect:
         await connections.leave(document_id, client_id)
-        await connections.broadcast(document_id, f"#{client_id}: Left the chat")
+        await connections.broadcast(document_id, f"Client \"{client_id}\" has left the \"{document.title}\" document")

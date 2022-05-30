@@ -4,7 +4,7 @@ from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
-DocumentId = str
+DocumentId = int
 ClientId = str
 
 ConnectionMap = dict[ClientId, WebSocket]

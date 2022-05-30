@@ -20,7 +20,7 @@ const DocumentListing = (): JSX.Element => (
     </>
 )
 
-const container = document.getElementById('live-area-app');
+const container = document.getElementById('livearea-app');
 const root = createRoot(container!);
 
 root.render(<DocumentListing />);
