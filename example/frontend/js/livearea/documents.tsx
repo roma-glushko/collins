@@ -1,7 +1,6 @@
-interface IDocument {
+export interface Document {
     id: number;
     title: string;
     body: string;
 }
 
-export default IDocument

@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { useEffect } from 'react'
 import { createState, State } from '@hookstate/core';
-
-const uuid = () => URL.createObjectURL(new Blob([])).substring(36)
+import { uuid } from "../utils";
 
 export const sessionID: State<string> = createState(uuid());
 

@@ -1,0 +1,1 @@
+export const uuid = (): string => URL.createObjectURL(new Blob([])).substring(36)

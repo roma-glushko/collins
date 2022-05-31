@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """
-    Render the Document Listing HTML page
+    Render the Documents Listing HTML page
     """
     templates = app.state.templates
 
@@ -50,7 +50,7 @@ async def get_document(document_id: int) -> Document:
     except KeyError:
         raise HTTPException(
             status_code=404,
-            detail=f"Document '{document_id}' doesn't exist. Please double check the documentID",
+            detail=f"Documents '{document_id}' doesn't exist. Please double check the documentID",
         )
 
 
@@ -68,7 +68,7 @@ async def websocket_endpoint(
     except KeyError:
         raise HTTPException(
             status_code=404,
-            detail=f"Document '{document_id}' doesn't exist",
+            detail=f"Documents '{document_id}' doesn't exist",
         )
 
     await connections.join(document_id, client_id, websocket)

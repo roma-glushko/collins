@@ -12,7 +12,7 @@ import Footer from "./components/Footer";
 
 import "./common.css"
 import "./DocumentView.css"
-import {documentID} from "./states/documentID";
+import { documentID } from "./states/documentID";
 
 
 const DocumentView = (): JSX.Element => (

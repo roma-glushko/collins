@@ -2,11 +2,11 @@ import * as React from 'react';
 
 import {useState} from "@hookstate/core";
 
-import IDocument from "../entities/Document";
+import { Document } from "../livearea/documents";
 
 import "./DocumentList.css"
 
-const fetchDocumentList = (): Promise<IDocument[]> => {
+const fetchDocumentList = (): Promise<Document[]> => {
     return fetch("http://localhost:3003/api/documents/")
         .then(response => response.json())
 }
@@ -26,7 +26,7 @@ const DocumentList = (): JSX.Element => {
     }
 
     return <ul className={`document-list`}>
-        {state.get().map((document: IDocument) => (
+        {state.get().map((document: Document) => (
         <li key={document.id}>
             <a href={`http://localhost:3003/documents/${document.id}/`}>
                 <h3>{document.title}</h3>
