@@ -13,7 +13,11 @@ const OtherViewers = (): JSX.Element => {
     })
 
     useEvent(EventTypes.document_left, (data) => {
-        // TODO:
+        otherViewers.set(
+            otherViewers.get().filter(
+                (viewerID: string) => viewerID !== data.session_id
+            )
+        )
     })
 
     if (!otherViewers.length) {
