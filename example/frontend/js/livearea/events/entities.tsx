@@ -1,19 +1,37 @@
+import { Document } from "../documents"
+
 export interface DocumentOpenedData {
-    sessionId: string
+    session_id: string
+    document: Document
 }
 
-export interface DocumentClosedData {
-    sessionId: string
+export interface DocumentJoinedData {
+    session_id: string
+}
+
+export interface DocumentLeftData {
+    session_id: string
 }
 
 export interface ServerEvents {
     document_opened: DocumentOpenedData,
-    document_closed: DocumentClosedData,
+    document_joined: DocumentJoinedData,
+    document_left: DocumentLeftData,
 }
 
 export interface ClientEvents {
 
 }
 
+export enum EventTypes {
+    document_opened = "document_opened",
+    document_joined = "document_joined",
+    document_left = "document_left",
+}
+
 export interface Events extends ServerEvents, ClientEvents {}
 
+export interface Message<T extends Events> {
+    type: keyof T;
+    data: T[keyof T];
+}

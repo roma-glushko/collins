@@ -1,6 +1,6 @@
 from typing import Final
 
-from livearea.managers.documents import Document
+from livearea.services.documents import Document
 
 DOCUMENT_MAP: Final[dict[int, Document]] = {
     0: Document(

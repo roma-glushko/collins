@@ -1,10 +1,12 @@
 from pydantic import BaseModel
 
+DocumentId = int
+
 
 class Document(BaseModel):
-    id: int
+    id: DocumentId
     title: str
     body: str
 
 
-__all__ = ("Document", )
+__all__ = ("Document",)

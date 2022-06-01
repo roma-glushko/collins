@@ -12,3 +12,5 @@ def setup_logger(log_level=logging.DEBUG) -> None:
     std_handler.setFormatter(std_format)
 
     logger.addHandler(std_handler)
+
+    logger.info("Logger has been configured")

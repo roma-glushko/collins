@@ -1,11 +1,16 @@
 import logging
 
-from fastapi import Request, WebSocket, WebSocketDisconnect, Query, HTTPException
+from fastapi import Request, WebSocket, HTTPException
 from fastapi.responses import HTMLResponse
 
 from livearea.app import app
-from livearea.entities import Document
-from livearea.managers import ConnectionManager, DocumentManager
+from livearea.entities.documents import Document
+from livearea.entities.sessions import Session
+from livearea.logger import setup_logger
+from livearea.repositories.documents import DocumentRepository
+from livearea.services.events import EventService
+
+setup_logger(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +38,7 @@ async def view_document(request: Request, document_id: str):
 
 @app.get("/api/documents/")
 async def list_documents() -> list[Document]:
-    documents: DocumentManager = app.state.documents
+    documents: DocumentRepository = app.state.document_repository
 
     return [
         doc
@@ -44,9 +49,9 @@ async def list_documents() -> list[Document]:
 @app.get("/api/documents/{document_id}/")
 async def get_document(document_id: int) -> Document:
     try:
-        documents: DocumentManager = app.state.documents
+        document_repository: DocumentRepository = app.state.document_repository
 
-        return documents[document_id]
+        return document_repository[document_id]
     except KeyError:
         raise HTTPException(
             status_code=404,
@@ -58,27 +63,21 @@ async def get_document(document_id: int) -> Document:
 async def websocket_endpoint(
     websocket: WebSocket,
     document_id: int,
-    client_id: str = Query(...),
 ) -> None:
-    documents: DocumentManager = app.state.documents
-    connections: ConnectionManager = app.state.connections
+    document_repository: DocumentRepository = app.state.document_repository
+    event_service: EventService = app.state.event_service
+
+    logger.info(f"Establishing a connection to a document", extra={"document_id": document_id})
 
     try:
-        document = documents[document_id]
+        document: Document = document_repository[document_id]
     except KeyError:
         raise HTTPException(
             status_code=404,
             detail=f"Documents '{document_id}' doesn't exist",
         )
 
-    await connections.join(document_id, client_id, websocket)
-    await connections.broadcast(document_id, f"Client \"{client_id}\" has joined the \"{document.title}\" document")
+    session: Session = Session(connection=websocket)
+    logger.info(f"Allocating a new session", extra={"session_id": session.id})
 
-    try:
-        while True:
-            data = await websocket.receive_json()
-
-            await connections.broadcast(document_id, f"#{client_id}: {data}")
-    except WebSocketDisconnect:
-        await connections.leave(document_id, client_id)
-        await connections.broadcast(document_id, f"Client \"{client_id}\" has left the \"{document.title}\" document")
+    await event_service.watch(document, session)

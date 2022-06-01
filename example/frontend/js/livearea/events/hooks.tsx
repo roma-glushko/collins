@@ -14,7 +14,7 @@ interface EventEmitter<T extends {}> {
 }
 
 export const useEvent: EventSubscriber<Events> = (event, callback) => {
-  const [subscriberID, _] = useState(uuid())
+  const [subscriberID, _] = useState(uuid());
 
   useEffect(() => {
     return (): void => {
@@ -52,8 +52,6 @@ export const useEmitter = (): EventEmitter<Events> => {
       return
     }
 
-    subscribers.forEach(subscriber => {
-      subscriber(data)
-    })
+    subscribers.forEach(subscriber => subscriber(data))
   }
 }

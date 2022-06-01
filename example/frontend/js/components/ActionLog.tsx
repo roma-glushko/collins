@@ -1,17 +1,27 @@
 import * as React from 'react';
-import { receivedMessages } from "./Websocket";
-import { useState } from "@hookstate/core";
+import { createState, State } from "@hookstate/core";
+
+import {useEvent} from "../livearea/events/hooks";
+import {EventTypes} from "../livearea/events/entities";
 
 import "./ActionLog.css"
 
-const ActionLog = () => {
-    const messages = useState(receivedMessages);
+const ActionLog = (): JSX.Element => {
+    const logs: State<string[]> = createState([]) as State<string[]>;
+
+    useEvent(EventTypes.document_joined, (data) => {
+        logs.merge([`Viewer ${data.session_id} has joined the document`])
+    })
+
+    useEvent(EventTypes.document_left, (data) => {
+        logs.merge([`Viewer ${data.session_id} has left the document`])
+    })
 
     return <div className={`action-log`}>
         <h3>Action Log</h3>
-        <ul id="actions">
-        {messages.get().map((message: string, messageIndex: number) =>
-            <li key={messageIndex}>{message}</li>
+        <ul className={`actions`}>
+        {logs.get().map((log: string, logIdx: number) =>
+            <li key={logIdx}>{log}</li>
         )}
         </ul>
     </div>
