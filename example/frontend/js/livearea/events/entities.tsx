@@ -3,6 +3,7 @@ import { Document } from "../documents"
 export interface DocumentOpenedData {
     session_id: string
     document: Document
+    other_viewers: string[]
 }
 
 export interface DocumentJoinedData {

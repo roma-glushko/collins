@@ -20,11 +20,20 @@ class EventService:
 
         await self.doc_room_service.join(document, session)
 
+        all_viewers: list[Session] = await self.doc_room_service.document_rooms.get_by_document(document)
+
+        other_viewers: list[str] = [
+            viewer.id
+            for viewer in all_viewers
+            if viewer.id != session.id
+        ]
+
         await session.send_message(Message(
             type=EventTypes.DOCUMENT_OPENED.value,
             data=DocumentOpenedData(
                 session_id=session.id,
                 document=document,
+                other_viewers=other_viewers,
             )
         ))
 

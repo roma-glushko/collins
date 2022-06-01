@@ -8,6 +8,10 @@ import {State, useState} from "@hookstate/core";
 const OtherViewers = (): JSX.Element => {
     const otherViewers: State<string[]> = useState([] as string[])
 
+    useEvent(EventTypes.document_opened, (data) => {
+        otherViewers.set(data.other_viewers || [])
+    })
+
     useEvent(EventTypes.document_joined, (data) => {
         otherViewers.merge([data.session_id])
     })

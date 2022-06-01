@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { createState, State } from "@hookstate/core";
+import {State, useState} from "@hookstate/core";
 
 import {useEvent} from "../livearea/events/hooks";
 import {EventTypes} from "../livearea/events/entities";
@@ -7,7 +7,11 @@ import {EventTypes} from "../livearea/events/entities";
 import "./ActionLog.css"
 
 const ActionLog = (): JSX.Element => {
-    const logs: State<string[]> = createState([]) as State<string[]>;
+    const logs: State<string[]> = useState([]) as State<string[]>;
+
+    useEvent(EventTypes.document_opened, (data) => {
+        logs.merge([`Document "${data.document.title}" has been opened`])
+    })
 
     useEvent(EventTypes.document_joined, (data) => {
         logs.merge([`Viewer ${data.session_id} has joined the document`])

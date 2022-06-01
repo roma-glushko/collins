@@ -17,6 +17,7 @@ class EventData(BaseModel):
 class DocumentOpenedData(EventData):
     session_id: str
     document: Document
+    other_viewers: list[str]
 
 
 class DocumentJoinedData(EventData):

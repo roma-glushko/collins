@@ -8,10 +8,11 @@ import ActionLog from "./components/ActionLog";
 import Identity from "./components/Identity";
 import { Websocket } from "./components/Websocket";
 import Footer from "./components/Footer";
+import OtherViewers from "./components/OtherViewers";
+
 
 import "./common.css"
 import "./DocumentView.css"
-import OtherViewers from "./components/OtherViewers";
 
 
 const DocumentView = (): JSX.Element => (
