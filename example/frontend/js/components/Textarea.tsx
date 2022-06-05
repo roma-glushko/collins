@@ -6,6 +6,7 @@ import { useState } from "@hookstate/core";
 
 import "./Textarea.css"
 import textarea from "./Textarea";
+import {ChangeEventHandler} from "react";
 
 type TextareaProps = {
     children?: JSX.Element | JSX.Element[]
@@ -21,35 +22,37 @@ const Textarea = (props: TextareaProps): JSX.Element => {
         docText.set(data.document.text);
     })
 
-    const handleInput = (event: React.FormEvent<HTMLTextAreaElement>) => {
+    const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
+        docText.set(event.target.value)
+    }
+
+    const handleInput = (event: React.FormEvent<HTMLTextAreaElement>): void => {
         const textarea: HTMLTextAreaElement = event.target
         const inputEvent: InputEvent = event.nativeEvent
 
-        console.log(event)
         console.log(`[Input] Text was ${inputEvent.inputType} "${inputEvent.data}" 
         at ${textarea.selectionStart}:${textarea.selectionEnd}`)
     }
 
-    function handleSelect(event: React.SyntheticEvent<HTMLTextAreaElement>) {
+    const handleSelect = (event: React.SyntheticEvent<HTMLTextAreaElement>): void => {
         const textarea: HTMLTextAreaElement = event.target
 
-        console.log(event)
         console.log(`Selection at ${textarea.selectionStart}:${textarea.selectionEnd}`)
     }
 
     return <form action="">
         <h2>{ document.get().title }</h2>
         { props.children }
-        { isSyncing.get() && <p className={`syncing-status`}>syncing 🔄</p> }
+        { isSyncing.get() && <p className={`syncing-status`}>🔄 syncing..</p> }
         <textarea
             className={`editbox`}
-            value={docText.get()}
-            rows={30}
+            rows={25}
             cols={50}
             autoComplete="off"
-            onChange={(event) => docText.set(event.target.value)}
+            onChange={event => handleChange(event)}
             onInput={event => handleInput(event)}
             onSelect={event => handleSelect(event)}
+            value={docText.get()}
         >
         </textarea>
         <p className={`revision`}>rev: {document.get().revision_id}</p>
