@@ -1,11 +1,16 @@
+import json
+import logging
 from typing import Any
 
 from fastapi import WebSocketDisconnect
 
 from livearea.entities.documents import Document, LatestDocumentRevision
 from livearea.entities.sessions import Session
-from livearea.protocol.events import Message, EventTypes, DocumentOpenedData, DocumentLeftData, DocumentJoinedData
+from livearea.protocol.events import Message, EventTypes, DocumentOpenedData, DocumentLeftData, DocumentJoinedData, \
+    CommitChangesData
 from livearea.services.documents import DocumentRoomService
+
+logger = logging.getLogger(__name__)
 
 
 class EventService:
@@ -18,19 +23,17 @@ class EventService:
         try:
             while True:
                 data: dict[Any, Any] = await session.connection.receive_json()
-                message: Message = Message(**data)
 
-                # TODO:
+                type: EventTypes = data.get("type")
+                data: dict[str, Any] = data.get("data", {})
+
+                logger.info(f"[{session.id}] {type}: {json.dumps(data)}")
+
+                if type == EventTypes.COMMIT_CHANGES:
+                    await self._commit_doc_changes(document, session, CommitChangesData(**data))
+
         except WebSocketDisconnect:
             await self._left_document(document, session)
-
-    async def _left_document(self, document: Document, session: Session) -> None:
-        await self.doc_room_service.leave(document, session)
-
-        await self.doc_room_service.broadcast(document, Message(
-            type=EventTypes.DOCUMENT_LEFT.value,
-            data=DocumentLeftData(session_id=session.id)
-        ))
 
     async def _join_document(self, document: Document, session: Session) -> None:
         await self.doc_room_service.broadcast(document, Message(
@@ -56,3 +59,15 @@ class EventService:
                 other_viewers=other_viewers,
             )
         ))
+
+    async def _left_document(self, document: Document, session: Session) -> None:
+        await self.doc_room_service.leave(document, session)
+
+        await self.doc_room_service.broadcast(document, Message(
+            type=EventTypes.DOCUMENT_LEFT.value,
+            data=DocumentLeftData(session_id=session.id)
+        ))
+
+    async def _commit_doc_changes(self, document: Document, session: Session, changes: CommitChangesData) -> None:
+        logger.info(f"{session.id} sent the following changeset: {changes.changeset}")
+        pass

@@ -11,29 +11,29 @@ from livearea.repositories.sessions import SessionMap
 
 logger = logging.getLogger(__name__)
 
-DocumentRoomMap = dict[DocumentId, SessionMap]
+DocumentChannelMap = dict[DocumentId, SessionMap]
 
 
-class DocumentRoomRepository:
-    def __init__(self, initial_rooms: Optional[DocumentRoomMap] = None) -> None:
-        self._doc_rooms: DocumentRoomMap = initial_rooms or {}
+class DocumentChannelRepository:
+    def __init__(self, initial_channels: Optional[DocumentChannelMap] = None) -> None:
+        self._doc_channels: DocumentChannelMap = initial_channels or {}
 
     async def get_by_document(self, document: Document) -> list[Session]:
-        return list(self._doc_rooms.get(document.id, {}).values())
+        return list(self._doc_channels.get(document.id, {}).values())
 
     async def register(self, document: Document, session: Session) -> None:
-        sessions: SessionMap = self._doc_rooms.get(document.id, {}) or {}
+        sessions: SessionMap = self._doc_channels.get(document.id, {}) or {}
 
         sessions[session.id] = session
-        self._doc_rooms[document.id] = sessions
+        self._doc_channels[document.id] = sessions
 
     async def unregister(self, document: Document, session: Session) -> None:
         session_id: SessionId = session.id
-        sessions: SessionMap = self._doc_rooms.get(document.id, {})
+        sessions: SessionMap = self._doc_channels.get(document.id, {})
 
         del sessions[session_id]
 
-        self._doc_rooms[document.id] = sessions
+        self._doc_channels[document.id] = sessions
 
 
 class DocumentRepository:
@@ -66,3 +66,5 @@ class DocumentRepository:
             )
 
         return document_map
+
+

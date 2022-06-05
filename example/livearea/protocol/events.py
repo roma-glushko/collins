@@ -32,7 +32,7 @@ class DocumentLeftData(EventData):
 
 
 class CommitChangesData(EventData):
-    revision_id: int
+    base_revision: int
     changeset: str
 
 

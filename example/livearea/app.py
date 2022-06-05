@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
-from livearea.repositories.documents import DocumentRepository, DocumentRoomRepository
+from livearea.repositories.documents import DocumentRepository, DocumentChannelRepository
 from livearea.repositories.sessions import SessionRepository
 from livearea.services.documents import DocumentRoomService
 from livearea.services.events import EventService
@@ -35,7 +35,7 @@ async def on_startup() -> None:
 
     app.state.session_repository = SessionRepository()
     app.state.document_repository = DocumentRepository(SAMPLE_DOCUMENTS)
-    app.state.doc_room_repository = DocumentRoomRepository()
+    app.state.doc_room_repository = DocumentChannelRepository()
 
     app.state.doc_room_service = DocumentRoomService(app.state.session_repository, app.state.doc_room_repository)
     app.state.event_service = EventService(app.state.doc_room_service)
