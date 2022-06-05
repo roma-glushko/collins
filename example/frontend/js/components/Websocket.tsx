@@ -1,5 +1,5 @@
 import * as React from "react";
-import {useEffect, useRef} from "react";
+import {MutableRefObject, useEffect, useRef} from "react";
 import {useEmitter, useEvent} from "../livearea/events/hooks";
 import {Events, EventTypes, Message} from "../livearea/events/entities";
 
@@ -9,8 +9,17 @@ const DOCUMENT_ID_REGEX: RegExp = /documents\/(?<docID>[0-9]*)(\/)?.*$/
 const parseDocumentID = (): string => DOCUMENT_ID_REGEX.exec(window.location.href).groups.docID;
 
 export const Websocket = (): JSX.Element => {
-    const websocket = useRef<WebSocket|null>(null)
+    const websocket: MutableRefObject<WebSocket | null> = useRef<WebSocket|null>(null)
     const eventEmitter = useEmitter()
+
+    function sendMessage<T extends Events>(eventType: keyof T, data: T[keyof T]): void {
+        const message: Message<T> = {
+            type: eventType,
+            data: data,
+        }
+
+        websocket.current.send(JSON.stringify(message))
+    }
 
     useEffect(() => {
         const documentID: string = parseDocumentID()
@@ -25,7 +34,7 @@ export const Websocket = (): JSX.Element => {
         websocket.current = socket
     }, [])
 
-    useEvent(EventTypes.commit_changes, (data) => {
+    useEvent(EventTypes.commit_changes, (data): void => {
         if (!websocket.current) {
             console.warn(
                 `Websocket connection has not been established yet.` +
@@ -34,16 +43,8 @@ export const Websocket = (): JSX.Element => {
             return
         }
 
-        const message: Message<Events> = {
-            type: EventTypes.commit_changes,
-            data: {
-                base_revision: data.base_revision,
-                changeset: data.changeset,
-            }
-        }
-
-        console.log(message)
-        websocket.current.send(JSON.stringify(message))
+        console.log(data)
+        sendMessage<Events>(EventTypes.commit_changes, data)
     })
 
     return <></>;
