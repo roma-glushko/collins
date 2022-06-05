@@ -129,14 +129,14 @@ class Changeset:
 
     def __call__(self, document: "Document") -> "Document":
         """
-        Apply changeset to the document, modifying it in-place.
+        Apply changeset to the _document, modifying it in-place.
         """
         text_mutator: TextMutator = document.mutate()
         self.operations.reorder()
 
         for operation in self.operations:
             # if we reuse (don't pack) changeset object, we can end up with
-            # empty operations sometimes, do not process them.
+            # empty _operations sometimes, do not process them.
             if not operation.char_n:
                 continue
 

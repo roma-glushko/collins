@@ -2,7 +2,7 @@ from typing import Any
 
 from fastapi import WebSocketDisconnect
 
-from livearea.entities.documents import Document
+from livearea.entities.documents import Document, LatestDocumentRevision
 from livearea.entities.sessions import Session
 from livearea.protocol.events import Message, EventTypes, DocumentOpenedData, DocumentLeftData
 from livearea.services.documents import DocumentRoomService
@@ -52,7 +52,7 @@ class EventService:
             type=EventTypes.DOCUMENT_OPENED.value,
             data=DocumentOpenedData(
                 session_id=session.id,
-                document=document,
+                document=LatestDocumentRevision.from_doc(document),
                 other_viewers=other_viewers,
             )
         ))

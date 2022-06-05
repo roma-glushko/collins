@@ -8,18 +8,18 @@ import {State, useState} from "@hookstate/core";
 const OtherViewers = (): JSX.Element => {
     const otherViewers: State<string[]> = useState([] as string[])
 
-    useEvent(EventTypes.document_opened, (data) => {
-        otherViewers.set(data.other_viewers || [])
+    useEvent(EventTypes.document_opened, ({other_viewers}) => {
+        otherViewers.set(other_viewers || [])
     })
 
-    useEvent(EventTypes.document_joined, (data) => {
-        otherViewers.merge([data.session_id])
+    useEvent(EventTypes.document_joined, ({session_id}) => {
+        otherViewers.merge([session_id])
     })
 
-    useEvent(EventTypes.document_left, (data) => {
+    useEvent(EventTypes.document_left, ({session_id}) => {
         otherViewers.set(
             otherViewers.get().filter(
-                (viewerID: string) => viewerID !== data.session_id
+                (viewerID: string) => viewerID !== session_id
             )
         )
     })

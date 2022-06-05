@@ -4,6 +4,8 @@ import { EventTypes } from "../livearea/events/entities";
 import { currentDocument } from "../states/documents";
 import { useState } from "@hookstate/core";
 
+import "./Textarea.css"
+
 type TextareaProps = {
     children?: JSX.Element | JSX.Element[]
 }
@@ -17,9 +19,10 @@ const Textarea = (props: TextareaProps): JSX.Element => {
 
     return <form action="">
         <h2>{ document.get().title }</h2>
+        <p className={`revision`}>rev: {document.get().revision_id}</p>
         { props.children }
         <textarea
-            value={document.get().body}
+            value={document.get().text}
             rows={30}
             cols={50}
             autoComplete="off">

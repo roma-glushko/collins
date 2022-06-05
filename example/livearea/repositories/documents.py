@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Iterator, Sequence
 
 from collins.builder import ChangesetBuilder
+
 from livearea.consts import RawDocument
 from livearea.entities.documents import Document, Revision
 from livearea.entities.documents import DocumentId

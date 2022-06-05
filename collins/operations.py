@@ -16,9 +16,9 @@ OPERATION_REGEX: Final[
 class OperationTypes(str, Enum):
     """
     Types:
-    - "=": Keep the next `chars` characters (containing `lines` newlines) from the base document
-    - "-": Remove the next `chars` characters (containing `lines` newlines) from the base document
-    - "+": Insert `chars` characters (containing `lines` newlines) at the current position in the document.
+    - "=": Keep the next `chars` characters (containing `lines` newlines) from the base _document
+    - "-": Remove the next `chars` characters (containing `lines` newlines) from the base _document
+    - "+": Insert `chars` characters (containing `lines` newlines) at the current position in the _document.
             The inserted characters come from the changeset's character bank.
     """
 
@@ -87,7 +87,7 @@ class Operation:
         Appends another component to this one
         """
         if not another_operation or not another_operation.char_n:
-            # skip no-ops operations
+            # skip no-ops _operations
             return
 
         if not self.char_n:
@@ -210,6 +210,10 @@ class OperationList:
     def __init__(self, operations: Optional[list[Operation]] = None) -> None:
         self._operations: list[Operation] = operations or []
 
+    @property
+    def operations(self) -> list[Operation]:
+        return self._operations
+
     def append(self, operation: Operation) -> None:
         if not operation.char_n:
             return
@@ -237,7 +241,7 @@ class OperationList:
     def reorder(self) -> None:
         """
         Reorders components to keep removals before insertions. Makes sense
-        in tie operations to keep result consistent across clients.
+        in tie _operations to keep result consistent across clients.
         """
         # TODO: define dirty flag to signal a need to reorder
 
@@ -283,7 +287,7 @@ class OperationList:
 
         for operator_match in re.finditer(OPERATION_REGEX, encoded_operators.encoded):
             if operator_match.group("end") == OPERATION_LIST_END:
-                # Start of the insert operation character bank, so no more operations to parse
+                # Start of the insert operation character bank, so no more _operations to parse
                 return cls(operations)
 
             if operator_match.group("end"):
@@ -400,4 +404,4 @@ class OperationList:
         return sum([operation.delta_len() for operation in self._operations])
 
     def __repr__(self) -> str:
-        return f"OperationList(operations: {len(self._operations)})"
+        return f"OperationList(_operations: {len(self._operations)})"

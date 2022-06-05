@@ -4,7 +4,7 @@ from fastapi import Request, WebSocket, HTTPException
 from fastapi.responses import HTMLResponse
 
 from livearea.app import app
-from livearea.entities.documents import Document
+from livearea.entities.documents import Document, LatestDocumentRevision
 from livearea.entities.sessions import Session
 from livearea.logger import setup_logger
 from livearea.repositories.documents import DocumentRepository
@@ -37,11 +37,11 @@ async def view_document(request: Request, document_id: str):
 
 
 @app.get("/api/documents/")
-async def list_documents() -> list[Document]:
+async def list_documents() -> list[LatestDocumentRevision]:
     documents: DocumentRepository = app.state.document_repository
 
     return [
-        doc
+        LatestDocumentRevision.from_doc(doc)
         for doc in documents
     ]
 

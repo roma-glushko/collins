@@ -11,8 +11,8 @@ import "./Identity.css"
 const Identity = (): JSX.Element => {
     const sessionId = useState(sessionID)
 
-    useEvent(EventTypes.document_opened, (data) => {
-        sessionId.set(data.session_id)
+    useEvent(EventTypes.document_opened, ({session_id}) => {
+        sessionId.set(session_id)
     })
 
     return <div className={`identity`}>

@@ -30,7 +30,7 @@ const DocumentList = (): JSX.Element => {
         <li key={document.id}>
             <a href={`http://localhost:3003/documents/${document.id}/`}>
                 <h3>{document.title}</h3>
-                <p>{cutDescription(document.body)}</p>
+                <p>{cutDescription(document.text)}</p>
             </a>
         </li>
         ))}

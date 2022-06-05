@@ -1,7 +1,8 @@
 from enum import Enum
+
 from pydantic import BaseModel
 
-from livearea.entities.documents import Document
+from livearea.entities.documents import LatestDocumentRevision
 
 
 class EventTypes(str, Enum):
@@ -16,7 +17,7 @@ class EventData(BaseModel):
 
 class DocumentOpenedData(EventData):
     session_id: str
-    document: Document
+    document: LatestDocumentRevision
     other_viewers: list[str]
 
 

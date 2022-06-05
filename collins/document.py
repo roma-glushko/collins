@@ -1,14 +1,15 @@
 from typing import TYPE_CHECKING
 
 from collins.mutators.text import TextMutator
+from collins.operations import EncodedOperations
 
 if TYPE_CHECKING:
     from collins.changeset import Changeset
 
 
 class Document:
-    def __init__(self, lines: list[str] = None) -> None:
-        self._lines: list[str] = lines or []
+    def __init__(self, lines: list[EncodedOperations] = None) -> None:
+        self._lines: list[EncodedOperations] = lines or []
 
     def mutate(self) -> TextMutator:
         return TextMutator(lines=self._lines)
@@ -25,7 +26,10 @@ class Document:
         return changeset(Document())
 
     def __len__(self) -> int:
-        pass
+        return sum([
+            len(line.char_bank)
+            for line in self._lines
+        ])
 
     @classmethod
     def decode(cls) -> "Document":

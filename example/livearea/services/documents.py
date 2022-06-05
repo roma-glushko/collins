@@ -29,3 +29,7 @@ class DocumentRoomService:
 
         for session in sessions:
             await session.connection.send_json(message.dict())
+
+
+class SyncDocumentService:
+    pass

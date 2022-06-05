@@ -54,7 +54,7 @@ class TextMutator:
     @property
     def remaining_lines(self) -> int:
         """
-        Number of remaining lines in the document, including current line
+        Number of remaining lines in the _document, including current line
         """
         return len(self.lines) - self._line_idx
 
@@ -110,7 +110,7 @@ class TextMutator:
             return
 
         """
-        fix for case with inserting into empty document - we must store first line that doesn't
+        fix for case with inserting into empty _document - we must store first line that doesn't
         exists in collection yet
         """
         self.lines[self._line_idx] = self.current_line.finish()

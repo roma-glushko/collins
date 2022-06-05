@@ -9,16 +9,16 @@ import "./ActionLog.css"
 const ActionLog = (): JSX.Element => {
     const logs: State<string[]> = useState([]) as State<string[]>;
 
-    useEvent(EventTypes.document_opened, (data) => {
-        logs.merge([`Document "${data.document.title}" has been opened`])
+    useEvent(EventTypes.document_opened, ({document}) => {
+        logs.merge([`Document "${document.title}" has been opened (rev: ${document.revision_id})`])
     })
 
-    useEvent(EventTypes.document_joined, (data) => {
-        logs.merge([`Viewer ${data.session_id} has joined the document`])
+    useEvent(EventTypes.document_joined, ({session_id}) => {
+        logs.merge([`Viewer ${session_id} has joined the document`])
     })
 
-    useEvent(EventTypes.document_left, (data) => {
-        logs.merge([`Viewer ${data.session_id} has left the document`])
+    useEvent(EventTypes.document_left, ({session_id}) => {
+        logs.merge([`Viewer ${session_id} has left the document`])
     })
 
     return <div className={`action-log`}>

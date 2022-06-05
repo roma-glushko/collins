@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useEffect } from "react";
 import { useEmitter } from "../livearea/events/hooks";
+import {Events, Message} from "../livearea/events/entities";
 
 const BASE_URL: string = 'localhost:3003'
 
@@ -12,8 +13,8 @@ export const Websocket = (): JSX.Element => {
 
     useEffect(() => {
         const onReceive = (event: MessageEvent) => {
-            const message = JSON.parse(event.data);
-            console.log(message)
+            const message: Message<Events> = JSON.parse(event.data);
+
             eventEmitter(message.type, message.data)
         }
 
@@ -22,7 +23,7 @@ export const Websocket = (): JSX.Element => {
             // this.socket.send(input.value)
         }
 
-        const socket = new WebSocket(`ws://${BASE_URL}/documents/${documentID()}/`);
+        const socket: WebSocket = new WebSocket(`ws://${BASE_URL}/documents/${documentID()}/`);
         socket.onmessage = onReceive
     })
 
