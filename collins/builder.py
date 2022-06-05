@@ -51,3 +51,10 @@ class ChangesetBuilder:
 
     def finish(self) -> "Changeset":
         return Changeset()
+
+    @classmethod
+    def from_text(cls, text: str) -> "Changeset":
+        builder: "ChangesetBuilder" = cls()
+        builder.insert(text)
+
+        return builder.finish()

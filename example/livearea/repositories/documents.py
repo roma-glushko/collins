@@ -1,7 +1,9 @@
 import logging
-from typing import Optional, Iterator
+from typing import Optional, Iterator, Sequence
 
-from livearea.entities.documents import Document
+from collins.builder import ChangesetBuilder
+from livearea.consts import RawDocument
+from livearea.entities.documents import Document, Revision
 from livearea.entities.documents import DocumentId
 from livearea.entities.sessions import Session, SessionId
 from livearea.repositories.sessions import SessionMap
@@ -34,8 +36,8 @@ class DocumentRoomRepository:
 
 
 class DocumentRepository:
-    def __init__(self, available_documents: Optional[dict[int, Document]] = None) -> None:
-        self._documents = available_documents or {}
+    def __init__(self, available_documents: Optional[Sequence[RawDocument]] = None) -> None:
+        self._documents: dict[DocumentId, Document] = self._create_document_map(available_documents) or {}
 
     def __len__(self) -> int:
         return len(self._documents)
@@ -45,3 +47,21 @@ class DocumentRepository:
 
     def __getitem__(self, document_id: int) -> Document:
         return self._documents[document_id]
+
+    @classmethod
+    def _create_document_map(cls, raw_documents: Sequence[RawDocument]) -> dict[DocumentId, Document]:
+        document_map: dict[DocumentId, Document] = {}
+
+        for idx, raw_doc in enumerate(raw_documents):
+            document_map[idx] = Document(
+                id=idx,
+                title=raw_doc.title,
+                revisions=[
+                    Revision(
+                        text=raw_doc.text,
+                        changeset=ChangesetBuilder.from_text(raw_doc.text)
+                    )
+                ]
+            )
+
+        return document_map

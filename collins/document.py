@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-from collins.builder import ChangesetBuilder
 from collins.mutators.text import TextMutator
 
 if TYPE_CHECKING:
@@ -16,6 +15,8 @@ class Document:
 
     @classmethod
     def from_text(cls, text: str) -> "Document":
+        from collins.builder import ChangesetBuilder
+
         builder: ChangesetBuilder = ChangesetBuilder()
         builder.insert(text)
 

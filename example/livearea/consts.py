@@ -1,12 +1,16 @@
-from typing import Final
 
-from livearea.services.documents import Document
+from pydantic import BaseModel
 
-DOCUMENT_MAP: Final[dict[int, Document]] = {
-    0: Document(
-        id=0,
+
+class RawDocument(BaseModel):
+    title: str
+    text: str
+
+
+SAMPLE_DOCUMENTS: tuple[RawDocument, ...] = (
+    RawDocument(
         title="About Australia 🇦🇺",
-        body="Australia, officially the Commonwealth of Australia, "
+        text="Australia, officially the Commonwealth of Australia, "
              "is a sovereign country comprising the mainland of the Australian continent, "
              "the island of Tasmania, and numerous smaller islands. "
              "With an area of 7,617,930 square kilometres (2,941,300 sq mi), "
@@ -16,10 +20,9 @@ DOCUMENT_MAP: Final[dict[int, Document]] = {
              "with deserts in the centre, "
              "tropical rainforests in the north-east, and mountain ranges in the south-east."
     ),
-    1: Document(
-        id=1,
+    RawDocument(
         title="About Japan 🇯🇵",
-        body="Japan is an island country in East Asia. "
+        text="Japan is an island country in East Asia. "
              "It is situated in the northwest Pacific Ocean, and is bordered on the west by the Sea of Japan, "
              "while extending from the Sea of Okhotsk in the north toward the East China Sea and Taiwan in the south. "
              "Japan is a part of the Ring of Fire, and spans an archipelago of 6852 islands covering "
@@ -28,10 +31,9 @@ DOCUMENT_MAP: Final[dict[int, Document]] = {
              "Tokyo is the nation's capital and largest city; "
              "other major cities include Yokohama, Osaka, Nagoya, Sapporo, Fukuoka, Kobe, and Kyoto."
     ),
-    2: Document(
-        id=2,
+    RawDocument(
         title="About Ukraine 🇺🇦",
-        body="Ukraine is a country in Eastern Europe. "
+        text="Ukraine is a country in Eastern Europe. "
              "It is the second largest country in Europe after Russia, "
              "which borders it to the east and north-east. "
              "Ukraine also shares borders with Belarus to the north; "
@@ -41,6 +43,6 @@ DOCUMENT_MAP: Final[dict[int, Document]] = {
              " The nation's capital and largest city is Kyiv. "
              "The official and national language is Ukrainian, and most people are also fluent in Russian."
     ),
-}
+)
 
-__all__ = ("DOCUMENT_MAP", )
+__all__ = ("SAMPLE_DOCUMENTS", "RawDocument", )

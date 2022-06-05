@@ -2,7 +2,7 @@ import logging
 
 from fastapi import FastAPI
 
-from livearea.consts import DOCUMENT_MAP
+from livearea.consts import SAMPLE_DOCUMENTS
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,7 +34,7 @@ async def on_startup() -> None:
     app.state.templates = Jinja2Templates(directory="templates")
 
     app.state.session_repository = SessionRepository()
-    app.state.document_repository = DocumentRepository(DOCUMENT_MAP)
+    app.state.document_repository = DocumentRepository(SAMPLE_DOCUMENTS)
     app.state.doc_room_repository = DocumentRoomRepository()
 
     app.state.doc_room_service = DocumentRoomService(app.state.session_repository, app.state.doc_room_repository)

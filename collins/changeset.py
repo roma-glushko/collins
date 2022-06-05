@@ -18,6 +18,7 @@ from collins.operations import (
 if TYPE_CHECKING:
     from collins.document import Document
 
+
 SIGNATURE: Final[str] = "C:"
 HEADER_REGEX: Final[
     str

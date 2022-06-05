@@ -6,11 +6,12 @@ authors = ["Roman Glushko <roman.glushko.m@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = ">=3.9"
+python = ">=3.9, <4.0"
 fastapi = "^0.78.0"
 pydantic = "^1.9.0"
 uvicorn = {extras = ["standard"], version = "^0.17.6"}
 Jinja2 = "^3.1.2"
+collins = { path = "../", develop = true }
 
 [tool.poetry.dev-dependencies]
 
