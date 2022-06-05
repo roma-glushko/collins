@@ -26,10 +26,7 @@ class Document:
         return changeset(Document())
 
     def __len__(self) -> int:
-        return sum([
-            len(line.char_bank)
-            for line in self._lines
-        ])
+        return sum([len(line.char_bank) for line in self._lines])
 
     @classmethod
     def decode(cls) -> "Document":

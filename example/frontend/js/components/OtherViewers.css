@@ -1,0 +1,29 @@
+.other-viewers {
+    max-width: 400px;
+}
+
+.other-viewers ul {
+    list-style: none;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.other-viewers ul li {
+    margin: 0.1rem
+}
+
+.other-viewers ul li .viewerAvatar {
+    background-color: lightblue;
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+    text-align: center;
+    vertical-align: middle;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #eeeeee;
+}

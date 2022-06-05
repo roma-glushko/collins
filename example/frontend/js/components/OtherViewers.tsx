@@ -1,25 +1,42 @@
 import * as React from 'react';
 
-import { useEvent } from "../livearea/events/hooks";
-import { EventTypes } from "../livearea/events/entities";
 import {State, useState} from "@hookstate/core";
 
+import { useEvent } from "../livearea/events/hooks";
+import { EventTypes } from "../livearea/events/entities";
+import { getRandomColor } from "./colors";
+
+import "./OtherViewers.css"
+
+interface Viewer {
+    session_id: string;
+    color: string;
+}
+
+const createViewerList = (sessionIDs: string[]): Viewer[] => {
+    return sessionIDs.map((session_id) => {
+        return {
+            session_id: session_id,
+            color: getRandomColor(),
+        }
+    })
+}
 
 const OtherViewers = (): JSX.Element => {
-    const otherViewers: State<string[]> = useState([] as string[])
+    const otherViewers: State<Viewer[]> = useState([] as Viewer[])
 
     useEvent(EventTypes.document_opened, ({other_viewers}) => {
-        otherViewers.set(other_viewers || [])
+        otherViewers.set(createViewerList(other_viewers) || [])
     })
 
     useEvent(EventTypes.document_joined, ({session_id}) => {
-        otherViewers.merge([session_id])
+        otherViewers.merge([{session_id: session_id, color: getRandomColor()}])
     })
 
     useEvent(EventTypes.document_left, ({session_id}) => {
         otherViewers.set(
             otherViewers.get().filter(
-                (viewerID: string) => viewerID !== session_id
+                (viewer: Viewer) => viewer.session_id !== session_id
             )
         )
     })
@@ -31,8 +48,12 @@ const OtherViewers = (): JSX.Element => {
     return <div className={`other-viewers`}>
         <h3>Other Viewers</h3>
         <ul>
-            {otherViewers.get().map((viewerID: string) => (
-                <li>{viewerID}</li>
+            {otherViewers.get().map((viewer: Viewer) => (
+                <li key={viewer.session_id}>
+                    <div title={viewer.session_id} className="viewerAvatar" style={{backgroundColor: viewer.color}}>
+                        <span>{viewer.session_id.substring(0, 3)}</span>
+                    </div>
+                </li>
             ))}
         </ul>
     </div>

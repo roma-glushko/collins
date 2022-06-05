@@ -50,7 +50,9 @@ class ChangesetBuilder:
           return this;
         };
         """
-        self._operations.extend(self._text_mutator.take(char_n, line_no).invert().operations)
+        self._operations.extend(
+            self._text_mutator.take(char_n, line_no).invert().operations
+        )
 
         return self
 

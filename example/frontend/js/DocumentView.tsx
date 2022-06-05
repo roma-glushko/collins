@@ -24,10 +24,11 @@ const DocumentView = (): JSX.Element => (
         </Header>
         <Identity />
         <div className={`document-view`}>
-            <Textarea>
+            <Textarea />
+            <div className={`sidebar`}>
                 <OtherViewers />
-            </Textarea>
-            <ActionLog />
+                <ActionLog />
+            </div>
             <Websocket />
         </div>
         <Footer />
