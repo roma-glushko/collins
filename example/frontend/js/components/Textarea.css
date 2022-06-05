@@ -3,3 +3,24 @@
     margin-top: 0;
     margin-bottom: 0;
 }
+
+.editbox {
+    padding: 1rem;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    background-color: #f8f8f8;
+    font-size: 16px;
+}
+
+.editbox:focus-visible {
+    outline: 1px auto #ff94ab;
+}
+
+.syncing-status {
+    margin: 0;
+    text-align: right;
+}
+
+::selection {
+  background-color: #ffb6c1;
+}
