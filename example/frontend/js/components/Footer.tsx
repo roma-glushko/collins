@@ -8,7 +8,7 @@ type FooterProps = {
 
 const Footer = (props: FooterProps): JSX.Element => (
     <footer>
-        Made with ❤️ and 🫖 by <a href={"https://github.com/roma-glushko"}>@roma_glushko</a>
+        Made with ❤️ and 🫖 by <a target={`_blank`} href={"https://github.com/roma-glushko"}>@roma_glushko</a>
         {props.children}
     </footer>
 )

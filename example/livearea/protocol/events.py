@@ -10,6 +10,8 @@ class EventTypes(str, Enum):
     DOCUMENT_JOINED = "document_joined"
     DOCUMENT_LEFT = "document_left"
 
+    COMMIT_CHANGES = "commit_changes"
+
 
 class EventData(BaseModel):
     pass
@@ -27,6 +29,11 @@ class DocumentJoinedData(EventData):
 
 class DocumentLeftData(EventData):
     session_id: str
+
+
+class CommitChangesData(EventData):
+    revision_id: int
+    changeset: str
 
 
 class Message(BaseModel):

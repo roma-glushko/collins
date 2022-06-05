@@ -16,7 +16,7 @@ const Identity = (): JSX.Element => {
     })
 
     return <div className={`identity`}>
-        <h3>Your Identity</h3>
+        <h3>🔐 Your Identity</h3>
         <p>Session ID: <strong>{sessionId.get()}</strong></p>
     </div>
 }

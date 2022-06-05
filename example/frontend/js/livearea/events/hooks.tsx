@@ -5,7 +5,7 @@ import { Events } from "./entities";
 const events = new Map()
 const subscriberCache = new Map()
 
-interface EventSubscriber<T extends {}> {
+interface EventSubscriber<T extends Events> {
   <K extends keyof T>(event: K, callback: (data: T[K]) => void): () => void;
 }
 
@@ -44,6 +44,8 @@ export const useEvent: EventSubscriber<Events> = (event, callback) => {
   }
 }
 
+type Subscriber = (data: any) => void  // TODO: get rid of any
+
 export const useEmitter = (): EventEmitter<Events> => {
   return (event, data) => {
     const subscribers = events.get(event)
@@ -52,6 +54,6 @@ export const useEmitter = (): EventEmitter<Events> => {
       return
     }
 
-    subscribers.forEach(subscriber => subscriber(data))
+    subscribers.forEach((subscriber: Subscriber) => subscriber(data))
   }
 }

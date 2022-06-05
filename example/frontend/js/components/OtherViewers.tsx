@@ -29,14 +29,14 @@ const OtherViewers = (): JSX.Element => {
         otherViewers.set(createViewerList(other_viewers) || [])
     })
 
-    useEvent(EventTypes.document_joined, ({session_id}) => {
-        otherViewers.merge([{session_id: session_id, color: getRandomColor()}])
+    useEvent(EventTypes.document_joined, (data) => {
+        otherViewers.merge([{session_id: data.session_id, color: getRandomColor()}])
     })
 
-    useEvent(EventTypes.document_left, ({session_id}) => {
+    useEvent(EventTypes.document_left, (data) => {
         otherViewers.set(
             otherViewers.get().filter(
-                (viewer: Viewer) => viewer.session_id !== session_id
+                (viewer: Viewer) => viewer.session_id !== data.session_id
             )
         )
     })
@@ -51,7 +51,7 @@ const OtherViewers = (): JSX.Element => {
             {otherViewers.get().map((viewer: Viewer) => (
                 <li key={viewer.session_id}>
                     <div title={viewer.session_id} className="viewerAvatar" style={{backgroundColor: viewer.color}}>
-                        <span>{viewer.session_id.substring(0, 3)}</span>
+                        <span>{viewer.session_id.substring(0, 2)}</span>
                     </div>
                 </li>
             ))}

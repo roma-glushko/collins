@@ -5,3 +5,8 @@
     overflow-y: scroll;
     height: 400px;
 }
+
+ul.actions {
+    padding-left: 1rem;
+    text-align: left;
+}

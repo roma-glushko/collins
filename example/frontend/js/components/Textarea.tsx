@@ -1,21 +1,21 @@
 import * as React from "react";
-import { useEvent } from "../livearea/events/hooks";
-import { EventTypes } from "../livearea/events/entities";
+import {useEmitter, useEvent} from "../livearea/events/hooks";
+import {CommitChangesData, EventTypes} from "../livearea/events/entities";
 import { currentDocument } from "../states/documents";
 import { useState } from "@hookstate/core";
 
 import "./Textarea.css"
 import textarea from "./Textarea";
-import {ChangeEventHandler} from "react";
 
 type TextareaProps = {
     children?: JSX.Element | JSX.Element[]
 }
 
 const Textarea = (props: TextareaProps): JSX.Element => {
-    const isSyncing = useState(true)
+    const isSyncing = useState(false)
     const document = useState(currentDocument)
     const docText = useState(currentDocument.text)
+    const emit = useEmitter()
 
     useEvent(EventTypes.document_opened, (data) => {
         document.set(data.document);
@@ -27,17 +27,26 @@ const Textarea = (props: TextareaProps): JSX.Element => {
     }
 
     const handleInput = (event: React.FormEvent<HTMLTextAreaElement>): void => {
-        const textarea: HTMLTextAreaElement = event.target
-        const inputEvent: InputEvent = event.nativeEvent
+        const textarea: HTMLTextAreaElement = event.target as HTMLTextAreaElement
+        const inputEvent: InputEvent = event.nativeEvent as InputEvent
 
         console.log(`[Input] Text was ${inputEvent.inputType} "${inputEvent.data}" 
         at ${textarea.selectionStart}:${textarea.selectionEnd}`)
     }
 
     const handleSelect = (event: React.SyntheticEvent<HTMLTextAreaElement>): void => {
-        const textarea: HTMLTextAreaElement = event.target
+        const textarea: HTMLTextAreaElement = event.target as HTMLTextAreaElement
 
         console.log(`Selection at ${textarea.selectionStart}:${textarea.selectionEnd}`)
+    }
+
+    const submitSampleChangeset = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault()
+
+        emit(EventTypes.commit_changes, {
+            base_revision: document.get().revision_id,
+            changeset: "C:hm>4+4$test",
+        } as CommitChangesData)
     }
 
     return <form action="">
@@ -55,6 +64,7 @@ const Textarea = (props: TextareaProps): JSX.Element => {
             value={docText.get()}
         >
         </textarea>
+        <button onClick={(event) => submitSampleChangeset(event)}>Submit Sample Changeset</button>
         <p className={`revision`}>rev: {document.get().revision_id}</p>
     </form>
 }

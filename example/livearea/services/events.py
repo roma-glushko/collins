@@ -4,7 +4,7 @@ from fastapi import WebSocketDisconnect
 
 from livearea.entities.documents import Document, LatestDocumentRevision
 from livearea.entities.sessions import Session
-from livearea.protocol.events import Message, EventTypes, DocumentOpenedData, DocumentLeftData
+from livearea.protocol.events import Message, EventTypes, DocumentOpenedData, DocumentLeftData, DocumentJoinedData
 from livearea.services.documents import DocumentRoomService
 
 
@@ -35,7 +35,7 @@ class EventService:
     async def _join_document(self, document: Document, session: Session) -> None:
         await self.doc_room_service.broadcast(document, Message(
             type=EventTypes.DOCUMENT_JOINED.value,
-            data=DocumentLeftData(session_id=session.id),
+            data=DocumentJoinedData(session_id=session.id),
         ))
 
         await self.doc_room_service.join(document, session)
