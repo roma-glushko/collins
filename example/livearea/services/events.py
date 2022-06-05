@@ -13,6 +13,26 @@ class EventService:
         self.doc_room_service: DocumentRoomService = doc_room_service
 
     async def watch(self, document: Document, session: Session) -> None:
+        await self._join_document(document, session)
+
+        try:
+            while True:
+                data: dict[Any, Any] = await session.connection.receive_json()
+                message: Message = Message(**data)
+
+                # TODO:
+        except WebSocketDisconnect:
+            await self._left_document(document, session)
+
+    async def _left_document(self, document: Document, session: Session) -> None:
+        await self.doc_room_service.leave(document, session)
+
+        await self.doc_room_service.broadcast(document, Message(
+            type=EventTypes.DOCUMENT_LEFT.value,
+            data=DocumentLeftData(session_id=session.id)
+        ))
+
+    async def _join_document(self, document: Document, session: Session) -> None:
         await self.doc_room_service.broadcast(document, Message(
             type=EventTypes.DOCUMENT_JOINED.value,
             data=DocumentLeftData(session_id=session.id),
@@ -36,17 +56,3 @@ class EventService:
                 other_viewers=other_viewers,
             )
         ))
-
-        try:
-            while True:
-                data: dict[Any, Any] = await session.connection.receive_json()
-                message: Message = Message(**data)
-
-                # TODO:
-        except WebSocketDisconnect:
-            await self.doc_room_service.leave(document, session)
-
-            await self.doc_room_service.broadcast(document, Message(
-                type=EventTypes.DOCUMENT_LEFT.value,
-                data=DocumentLeftData(session_id=session.id)
-            ))
